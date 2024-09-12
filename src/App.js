@@ -20,22 +20,37 @@ const App = () => {
                 body: JSON.stringify({ text }),
             });
 
-            const responseData = await response.json();
-            console.log("Processed API Response:", responseData);
+            const responseText = await response.text();
+            console.log("Raw API Response:", responseText);
 
-            if (response.ok) {
-                setProcessedText(responseData.result.generated_text); // Adjust according to actual response format
-                const lines = responseData.result.generated_text.split('\n').map(line => line.trim()).filter(Boolean);
-                const quizPairs = [];
-                for (let i = 0; i < lines.length; i += 2) {
-                    if (lines[i + 1]) {
-                        quizPairs.push({ term: lines[i], definition: lines[i + 1] });
-                    }
-                }
-                setQuizData(quizPairs);
-            } else {
-                throw new Error(responseData.error || 'API response error');
+            if (!response.ok) {
+                throw new Error('Error response from API: ' + responseText);
             }
+
+            let responseData;
+            try {
+                responseData = JSON.parse(responseText);
+            } catch (parseError) {
+                throw new Error('Failed to parse JSON response: ' + parseError.message);
+            }
+
+            // Assuming GPT-2 returns text directly
+            setProcessedText(responseData.result ? responseData.result.generated_text : responseData.text);
+
+            const lines = (responseData.result ? responseData.result.generated_text : responseData.text)
+                .split('\n')
+                .map(line => line.trim())
+                .filter(Boolean);
+
+            // Group lines into pairs
+            const quizPairs = [];
+            for (let i = 0; i < lines.length; i += 2) {
+                if (lines[i + 1]) {
+                    quizPairs.push({ term: lines[i], definition: lines[i + 1] });
+                }
+            }
+
+            setQuizData(quizPairs);
         } catch (error) {
             setError('Error processing text: ' + error.message);
             console.error('Error details:', error);
