@@ -7,7 +7,7 @@ const ImageUpload = ({ onTextDetected }) => {
     const processImage = async (file) => {
         setLoading(true);
         const formData = new FormData();
-        formData.append('apikey', process.env.REACT_APP_OCR_API_KEY); // Use environment variable for API key
+        formData.append('apikey', 'K84884375988957'); // Replace with your actual API key
         formData.append('file', file);
         formData.append('language', 'eng');
 
@@ -37,7 +37,7 @@ const ImageUpload = ({ onTextDetected }) => {
         const file = e.target.files[0];
         if (file) {
             setImage(URL.createObjectURL(file));
-            await processImage(file);
+            processImage(file);
         }
     };
 
