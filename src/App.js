@@ -9,26 +9,33 @@ const App = () => {
 
     // Function to call mBART API
     const callMBartAPI = async (text) => {
-        setLoading(true);
-        setError(''); // Reset any previous errors
-        try {
-            const response = await fetch('/api/huggingface', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ text }),
-            });
+    setLoading(true);
+    setError(''); // Reset any previous errors
+    try {
+        const response = await fetch('/api/huggingface', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ text }),
+        });
 
-            const data = await response.json();
-            console.log("mBART API Response:", data);
-            setProcessedText(data.result);
-        } catch (error) {
-            setError('Error calling mBART API: ' + error.message);
-        } finally {
-            setLoading(false);
-        }
-    };
+        // Log the raw response text for debugging
+        const responseText = await response.text();
+        console.log("Raw response text:", responseText);
+
+        // Attempt to parse the response text as JSON
+        const data = JSON.parse(responseText);
+        console.log("mBART API Response:", data);
+        setProcessedText(data.result);
+    } catch (error) {
+        setError('Error calling mBART API: ' + error.message);
+        console.error('Error details:', error);
+    } finally {
+        setLoading(false);
+    }
+};
+
 
     return (
         <div>
