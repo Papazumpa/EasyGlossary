@@ -1,5 +1,3 @@
-// api/huggingface.js
-
 const axios = require('axios');
 
 export default async function handler(req, res) {
@@ -30,7 +28,8 @@ Here is the text to process:\n\n${text}`,
 
         res.status(200).json({ result: response.data });
     } catch (error) {
+        // Log error details for debugging
         console.error('API request failed:', error.response ? error.response.data : error.message);
-        res.status(500).json({ error: 'API request failed' });
+        res.status(500).json({ error: 'API request failed', details: error.response ? error.response.data : error.message });
     }
 }
