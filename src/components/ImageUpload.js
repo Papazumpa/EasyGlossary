@@ -12,36 +12,51 @@ const ImageUpload = ({ onTextDetected }) => {
         }
     };
 
-    const processImage = async (file) => {
-        setLoading(true);
-        const formData = new FormData();
-        formData.append('apikey', 'K84884375988957'); // Replace with your OCR.space API key
-        formData.append('file', file);
-        formData.append('language', 'eng'); // Specify language (you can modify this)
+import React, { useState } from 'react';
+import ImageUpload from './ImageUpload';
 
-        try {
-            const response = await fetch('https://api.ocr.space/parse/image', {
-                method: 'POST',
-                body: formData,
-            });
+const App = () => {
+    const [quizData, setQuizData] = useState([]);
+    const [detectedText, setDetectedText] = useState('');
 
-            const result = await response.json();
-            const detectedText = result.ParsedResults[0].ParsedText || '';
-            onTextDetected(detectedText);
-        } catch (error) {
-            console.error('Error during OCR:', error);
-        } finally {
-            setLoading(false);
+    const processText = (text) => {
+        // Assuming text is in the form of alternating lines
+        const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
+
+        // Group lines into pairs (assuming each line corresponds to a term in one language)
+        const quizPairs = [];
+        for (let i = 0; i < lines.length; i += 2) {
+            if (lines[i + 1]) {
+                quizPairs.push({ term: lines[i], definition: lines[i + 1] });
+            }
         }
+
+        setQuizData(quizPairs);
     };
 
     return (
         <div>
-            <input type="file" accept="image/*" onChange={handleImageChange} />
-            {image && <img src={image} alt="Uploaded preview" style={{ width: '200px' }} />}
-            {loading && <p>Processing...</p>}
+            <h1>Image to Quiz</h1>
+            <ImageUpload onTextDetected={(text) => {
+                setDetectedText(text);
+                processText(text);
+            }} />
+
+            <h2>Detected Text</h2>
+            <pre>{detectedText}</pre>
+
+            <h2>Generated Quiz</h2>
+            {quizData.length > 0 ? (
+                <ul>
+                    {quizData.map((pair, index) => (
+                        <li key={index}>{pair.term} = {pair.definition}</li>
+                    ))}
+                </ul>
+            ) : (
+                <p>No quiz generated yet.</p>
+            )}
         </div>
     );
 };
 
-export default ImageUpload;
+export default App;
