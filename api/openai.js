@@ -9,7 +9,7 @@ export default async function handler(req, res) {
         method: 'POST',
         url: 'https://api.openai.com/v1/chat/completions',
         headers: {
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`, // Add your API key to an environment variable
+            'Authorization': `Bearer sk-svcacct-ePqrbTQNVBjuxvQN6bp2M05pJ1qubKFwtq3oOK3gFcvrD8jlSL-0hMY4-HRjJXTzZT3BlbkFJeTtHu3kUQZllXWawBmycQDC3a2hj57-Yo9TKA1MiR_1-Q6Gw83-Jg-QHEuMEqNVAA`, // Add your API key to an environment variable
             'Content-Type': 'application/json',
         },
         data: {
