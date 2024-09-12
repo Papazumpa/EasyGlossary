@@ -9,7 +9,7 @@ export default async function handler(req, res) {
     method: 'POST',
     url: 'https://api-inference.huggingface.co/models/bert-base-multilingual-cased',
     headers: {
-      Authorization: `Bearer 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`,
+      Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
       'Content-Type': 'application/json',
     },
     data: { inputs: ocrText },
