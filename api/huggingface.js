@@ -12,10 +12,9 @@ export default async function handler(req, res) {
 2. Removing any text that does not have a corresponding term.
 3. Grouping the remaining terms into pairs, where each term is paired with its corresponding definition.
 
-Here is the text to process:
-\n\n${text}`,
+Here is the text to process:\n\n${text}`,
             parameters: {
-                "max_length": 1024, // Increase max_length to handle longer texts if needed
+                "max_length": 1024,
                 "return_dict": true,
                 "do_sample": false,
             },
@@ -26,8 +25,12 @@ Here is the text to process:
             },
         });
 
-        res.status(200).json({ result: response.data[0].generated_text });
+        // Log raw response data for debugging
+        console.log("Raw API Response:", response.data);
+
+        res.status(200).json({ result: response.data });
     } catch (error) {
+        console.error('API request failed:', error.response ? error.response.data : error.message);
         res.status(500).json({ error: 'API request failed' });
     }
 }
