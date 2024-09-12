@@ -2,30 +2,15 @@ import React, { useState } from 'react';
 import ImageUpload from './components/ImageUpload'; // Ensure correct path
 
 const App = () => {
-    const [quizData, setQuizData] = useState([]);
     const [detectedText, setDetectedText] = useState('');
     const [processedText, setProcessedText] = useState('');
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
-    // Function to process text from OCR
-    const processText = (text) => {
-        console.log("Processing text:", text);
-        const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
-
-        // Group lines into pairs
-        const quizPairs = [];
-        for (let i = 0; i < lines.length; i += 2) {
-            if (lines[i + 1]) {
-                quizPairs.push({ term: lines[i], definition: lines[i + 1] });
-            }
-        }
-
-        setQuizData(quizPairs);
-    };
-
-    // Function to call Hugging Face API
-    const callHuggingFaceAPI = async (text) => {
+    // Function to call mBART API
+    const callMBartAPI = async (text) => {
         setLoading(true);
+        setError(''); // Reset any previous errors
         try {
             const response = await fetch('/api/huggingface', {
                 method: 'POST',
@@ -36,11 +21,10 @@ const App = () => {
             });
 
             const data = await response.json();
-            console.log("Hugging Face API Response:", data);
-            setProcessedText(data);
-            processText(data); // Use processed data for quiz generation if necessary
+            console.log("mBART API Response:", data);
+            setProcessedText(data.result);
         } catch (error) {
-            console.error('Error calling Hugging Face API:', error);
+            setError('Error calling mBART API: ' + error.message);
         } finally {
             setLoading(false);
         }
@@ -48,10 +32,10 @@ const App = () => {
 
     return (
         <div>
-            <h1>Image to Quiz</h1>
+            <h1>Image to Text Processing</h1>
             <ImageUpload onTextDetected={(text) => {
                 setDetectedText(text);
-                callHuggingFaceAPI(text);
+                callMBartAPI(text);
             }} />
 
             <h2>Detected Text</h2>
@@ -59,17 +43,7 @@ const App = () => {
 
             <h2>Processed Text</h2>
             {loading ? <p>Loading...</p> : <pre>{processedText}</pre>}
-
-            <h2>Generated Quiz</h2>
-            {quizData.length > 0 ? (
-                <ul>
-                    {quizData.map((pair, index) => (
-                        <li key={index}>{pair.term} = {pair.definition}</li>
-                    ))}
-                </ul>
-            ) : (
-                <p>No quiz generated yet.</p>
-            )}
+            {error && <p style={{ color: 'red' }}>{error}</p>}
         </div>
     );
 };
