@@ -1,56 +1,76 @@
 import React, { useState } from 'react';
-import ImageUpload from './components/ImageUpload'; // Ensure correct path
+import ImageUpload from './components/ImageUpload';
 
 const App = () => {
+    const [quizData, setQuizData] = useState([]);
     const [detectedText, setDetectedText] = useState('');
     const [processedText, setProcessedText] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    // Function to call mBART API
-    const callMBartAPI = async (text) => {
-    setLoading(true);
-    setError(''); // Reset any previous errors
-    try {
-        const response = await fetch('/api/huggingface', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ text }),
-        });
+    const processText = async (text) => {
+        setLoading(true);
+        setError('');
+        try {
+            const response = await fetch('/api/huggingface', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ text }),
+            });
 
-        // Log the raw response text for debugging
-        const responseText = await response.text();
-        console.log("Raw response text:", responseText);
+            const responseData = await response.json();
+            console.log("Processed API Response:", responseData);
 
-        // Attempt to parse the response text as JSON
-        const data = JSON.parse(responseText);
-        console.log("mBART API Response:", data);
-        setProcessedText(data.result);
-    } catch (error) {
-        setError('Error calling mBART API: ' + error.message);
-        console.error('Error details:', error);
-    } finally {
-        setLoading(false);
-    }
-};
-
+            if (response.ok) {
+                setProcessedText(responseData.result.generated_text); // Adjust according to actual response format
+                const lines = responseData.result.generated_text.split('\n').map(line => line.trim()).filter(Boolean);
+                const quizPairs = [];
+                for (let i = 0; i < lines.length; i += 2) {
+                    if (lines[i + 1]) {
+                        quizPairs.push({ term: lines[i], definition: lines[i + 1] });
+                    }
+                }
+                setQuizData(quizPairs);
+            } else {
+                throw new Error(responseData.error || 'API response error');
+            }
+        } catch (error) {
+            setError('Error processing text: ' + error.message);
+            console.error('Error details:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div>
-            <h1>Image to Text Processing</h1>
+            <h1>Image to Quiz</h1>
             <ImageUpload onTextDetected={(text) => {
                 setDetectedText(text);
-                callMBartAPI(text);
+                processText(text);
             }} />
 
             <h2>Detected Text</h2>
             <pre>{detectedText}</pre>
 
+            {loading && <p>Processing...</p>}
+            {error && <p>Error: {error}</p>}
+
             <h2>Processed Text</h2>
-            {loading ? <p>Loading...</p> : <pre>{processedText}</pre>}
-            {error && <p style={{ color: 'red' }}>{error}</p>}
+            <pre>{processedText}</pre>
+
+            <h2>Generated Quiz</h2>
+            {quizData.length > 0 ? (
+                <ul>
+                    {quizData.map((pair, index) => (
+                        <li key={index}>{pair.term} = {pair.definition}</li>
+                    ))}
+                </ul>
+            ) : (
+                <p>No quiz generated yet.</p>
+            )}
         </div>
     );
 };
