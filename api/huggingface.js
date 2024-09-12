@@ -4,7 +4,7 @@ export default async function handler(req, res) {
     const { text } = req.body;
 
     try {
-        const response = await fetch('https://api-inference.huggingface.co/models/facebook/mbart-large-50', {
+        const response = await fetch('https://api-inference.huggingface.co/models/gpt2', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
@@ -20,18 +20,20 @@ Here is the text to process:\n\n${text}`
             }),
         });
 
-        // Check if the response is OK
+        const rawText = await response.text();
+        console.log("Raw API Response:", rawText);
+
         if (!response.ok) {
-            const error = await response.text();
-            console.error('API request failed:', error);
-            return res.status(response.status).json({ error: 'API request failed', details: error });
+            throw new Error(`HTTP error! Status: ${response.status} - ${rawText}`);
         }
 
-        const result = await response.json();
-        console.log("API Response:", result);
-        res.status(200).json({ result });
+        try {
+            const result = JSON.parse(rawText);
+            res.status(200).json({ result });
+        } catch (parseError) {
+            console.error('Error parsing JSON:', parseError);
+            res.status(500).json({ error: 'Error parsing JSON', details: rawText });
+        }
     } catch (error) {
         console.error('Error calling Hugging Face API:', error);
-        res.status(500).json({ error: 'Error calling Hugging Face API', details: error.message });
-    }
-}
+        res.status(500).json({ error: 'Error calling Hugging Face
