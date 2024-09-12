@@ -1,40 +1,45 @@
 import React, { useState } from 'react';
-import ImageUpload from './components/ImageUpload';
-import Quiz from './components/Quiz';
+import ImageUpload from './components/ImageUpload'; // Adjust the import path to where ImageUpload is located
 
 const App = () => {
-    const [text1, setText1] = useState('');
-    const [text2, setText2] = useState('');
-    const [pairs, setPairs] = useState([]);
-    const [showQuiz, setShowQuiz] = useState(false);
+    const [quizData, setQuizData] = useState([]);
+    const [detectedText, setDetectedText] = useState('');
 
-    const handleTextDetected = (text) => {
-        if (!text1) {
-            setText1(text);
-        } else {
-            setText2(text);
-            const detectedPairs = createLanguagePairs(text1, text2);
-            setPairs(detectedPairs);
-            setShowQuiz(true);
+    const processText = (text) => {
+        // Assuming text is in the form of alternating lines
+        const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
+
+        // Group lines into pairs (assuming each line corresponds to a term in one language)
+        const quizPairs = [];
+        for (let i = 0; i < lines.length; i += 2) {
+            if (lines[i + 1]) {
+                quizPairs.push({ term: lines[i], definition: lines[i + 1] });
+            }
         }
-    };
 
-    const createLanguagePairs = (text1, text2) => {
-        const lines1 = text1.split('\n');
-        const lines2 = text2.split('\n');
-        const pairs = lines1.map((line, index) => ({ term: line, translation: lines2[index] })).filter(pair => pair.translation);
-        return pairs;
+        setQuizData(quizPairs);
     };
 
     return (
         <div>
-            {!showQuiz ? (
-                <div>
-                    <h1>Upload Text Images</h1>
-                    <ImageUpload onTextDetected={handleTextDetected} />
-                </div>
+            <h1>Image to Quiz</h1>
+            <ImageUpload onTextDetected={(text) => {
+                setDetectedText(text);
+                processText(text);
+            }} />
+
+            <h2>Detected Text</h2>
+            <pre>{detectedText}</pre>
+
+            <h2>Generated Quiz</h2>
+            {quizData.length > 0 ? (
+                <ul>
+                    {quizData.map((pair, index) => (
+                        <li key={index}>{pair.term} = {pair.definition}</li>
+                    ))}
+                </ul>
             ) : (
-                <Quiz pairs={pairs} />
+                <p>No quiz generated yet.</p>
             )}
         </div>
     );
