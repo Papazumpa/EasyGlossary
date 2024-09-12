@@ -1,80 +1,39 @@
 import React, { useState } from 'react';
-import ImageUpload from './components/ImageUpload';
+import ImageUpload from './components/ImageUpload'; // Ensure correct path
 
 const App = () => {
     const [quizData, setQuizData] = useState([]);
     const [detectedText, setDetectedText] = useState('');
-    const [processedText, setProcessedText] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
+    const [correctedText, setCorrectedText] = useState(''); // New state for corrected text
 
-    const processText = async (text) => {
-        setLoading(true);
-        setError('');
+    const processOCRText = async (text) => {
+        setDetectedText(text);
+
         try {
-            const response = await fetch('/api/huggingface', {
+            const response = await fetch('/api/openai', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ text }),
+                body: JSON.stringify({ text })
             });
-
-            const responseText = await response.text();
-            console.log("Raw API Response:", responseText);
-
-            if (!response.ok) {
-                throw new Error('Error response from API: ' + responseText);
-            }
-
-            let responseData;
-            try {
-                responseData = JSON.parse(responseText);
-            } catch (parseError) {
-                throw new Error('Failed to parse JSON response: ' + parseError.message);
-            }
-
-            // Assuming GPT-2 returns text directly
-            setProcessedText(responseData.result ? responseData.result.generated_text : responseData.text);
-
-            const lines = (responseData.result ? responseData.result.generated_text : responseData.text)
-                .split('\n')
-                .map(line => line.trim())
-                .filter(Boolean);
-
-            // Group lines into pairs
-            const quizPairs = [];
-            for (let i = 0; i < lines.length; i += 2) {
-                if (lines[i + 1]) {
-                    quizPairs.push({ term: lines[i], definition: lines[i + 1] });
-                }
-            }
-
-            setQuizData(quizPairs);
+            const data = await response.json();
+            setCorrectedText(data.result); // Store the corrected text
         } catch (error) {
-            setError('Error processing text: ' + error.message);
-            console.error('Error details:', error);
-        } finally {
-            setLoading(false);
+            console.error('Error processing text:', error);
         }
     };
 
     return (
         <div>
             <h1>Image to Quiz</h1>
-            <ImageUpload onTextDetected={(text) => {
-                setDetectedText(text);
-                processText(text);
-            }} />
+            <ImageUpload onTextDetected={(text) => processOCRText(text)} />
 
             <h2>Detected Text</h2>
             <pre>{detectedText}</pre>
 
-            {loading && <p>Processing...</p>}
-            {error && <p>Error: {error}</p>}
-
-            <h2>Processed Text</h2>
-            <pre>{processedText}</pre>
+            <h2>Corrected Text from GPT-3.5</h2>
+            <pre>{correctedText}</pre>
 
             <h2>Generated Quiz</h2>
             {quizData.length > 0 ? (
