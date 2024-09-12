@@ -4,7 +4,10 @@ import ImageUpload from './components/ImageUpload'; // Ensure correct path
 const App = () => {
     const [quizData, setQuizData] = useState([]);
     const [detectedText, setDetectedText] = useState('');
+    const [processedText, setProcessedText] = useState('');
+    const [loading, setLoading] = useState(false);
 
+    // Function to process text from OCR
     const processText = (text) => {
         console.log("Processing text:", text);
         const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
@@ -20,16 +23,42 @@ const App = () => {
         setQuizData(quizPairs);
     };
 
+    // Function to call Hugging Face API
+    const callHuggingFaceAPI = async (text) => {
+        setLoading(true);
+        try {
+            const response = await fetch('/api/huggingface', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ text }),
+            });
+
+            const data = await response.json();
+            console.log("Hugging Face API Response:", data);
+            setProcessedText(data);
+            processText(data); // Use processed data for quiz generation if necessary
+        } catch (error) {
+            console.error('Error calling Hugging Face API:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div>
             <h1>Image to Quiz</h1>
             <ImageUpload onTextDetected={(text) => {
                 setDetectedText(text);
-                processText(text);
+                callHuggingFaceAPI(text);
             }} />
 
             <h2>Detected Text</h2>
             <pre>{detectedText}</pre>
+
+            <h2>Processed Text</h2>
+            {loading ? <p>Loading...</p> : <pre>{processedText}</pre>}
 
             <h2>Generated Quiz</h2>
             {quizData.length > 0 ? (
