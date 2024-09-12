@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import ImageUpload from './components/ImageUpload'; // Adjust the import path to where ImageUpload is located
+import ImageUpload from './components/ImageUpload'; // Ensure correct path
 
 const App = () => {
     const [quizData, setQuizData] = useState([]);
     const [detectedText, setDetectedText] = useState('');
 
     const processText = (text) => {
-        // Assuming text is in the form of alternating lines
+        console.log("Processing text:", text);
         const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
 
-        // Group lines into pairs (assuming each line corresponds to a term in one language)
+        // Group lines into pairs
         const quizPairs = [];
         for (let i = 0; i < lines.length; i += 2) {
             if (lines[i + 1]) {
