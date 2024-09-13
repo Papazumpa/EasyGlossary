@@ -7,6 +7,10 @@ const App = () => {
     const [detectedText, setDetectedText] = useState('');
     const [processedText, setProcessedText] = useState('');
     const [loading, setLoading] = useState(false);
+    const [languageOne, setLanguageOne] = useState('');
+    const [languageTwo, setLanguageTwo] = useState('');
+    const [l1Title, setL1Title] = useState('');
+    const [l2Title, setL2Title] = useState('');
 
     // Function to call Cohere API
     const callCohereAPI = async (ocrOutput) => {
@@ -44,13 +48,45 @@ const App = () => {
         console.log("Processing text:", text);
         const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
 
-        // Split each line by the '=' sign to create pairs
+        // Extract languageOne, languageTwo, l1Title, l2Title and remove them from the questions
+        const specialLines = {
+            languageOne: '',
+            languageTwo: '',
+            l1Title: '',
+            l2Title: ''
+        };
+
         const quizPairs = lines.map(line => {
+            // Extract special lines
+            if (line.includes('language one =')) {
+                specialLines.languageOne = line.split('=')[1].trim();
+                return null;
+            }
+            if (line.includes('language two =')) {
+                specialLines.languageTwo = line.split('=')[1].trim();
+                return null;
+            }
+            if (line.includes('l1 title =')) {
+                specialLines.l1Title = line.split('=')[1].trim();
+                return null;
+            }
+            if (line.includes('l2 title =')) {
+                specialLines.l2Title = line.split('=')[1].trim();
+                return null;
+            }
+
+            // Split each line by the '=' sign to create pairs
             const [german, swedish] = line.split('=').map(part => part.trim());
             return { german, swedish };
-        });
+        }).filter(Boolean);  // Remove null values (special lines)
 
         setQuizData(quizPairs);  // Store the quiz pairs
+
+        // Set special values (language names and titles)
+        setLanguageOne(specialLines.languageOne);
+        setLanguageTwo(specialLines.languageTwo);
+        setL1Title(specialLines.l1Title);
+        setL2Title(specialLines.l2Title);
     };
 
     return (
@@ -72,7 +108,14 @@ const App = () => {
                     {quizData.length > 0 ? (
                         <>
                             <h2>Generated Quiz</h2>
-                            <Quiz phrases={quizData} />  {/* Pass quizData to the Quiz component */}
+                            {/* Pass quizData and language titles to the Quiz component */}
+                            <Quiz
+                                phrases={quizData}
+                                languageOne={languageOne}
+                                languageTwo={languageTwo}
+                                l1Title={l1Title}
+                                l2Title={l2Title}
+                            />
                         </>
                     ) : (
                         <p>No quiz generated yet.</p>
