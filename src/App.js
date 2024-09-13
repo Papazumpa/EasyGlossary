@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import ImageUpload from './components/ImageUpload'; // Make sure this is the correct path
+import ImageUpload from './components/ImageUpload'; // Ensure this is the correct path
 
 const App = () => {
     const [quizData, setQuizData] = useState([]);
@@ -7,45 +7,38 @@ const App = () => {
     const [processedText, setProcessedText] = useState('');
     const [loading, setLoading] = useState(false);
 
-    // Function to call OpenAI API
-    const callOpenAIAPI = async (text) => {
+    // Function to call Cohere API
+    const callCohereAPI = async (text) => {
         setLoading(true);
 
         try {
-            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            const response = await fetch('/api/cohere', {  // Use the new API route
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${process.env.REACT_APP_OPENAI_API_KEY}`,  // API key from .env
                 },
                 body: JSON.stringify({
-                    model: 'gpt-3.5-turbo',
-                    messages: [
-                        {
-                            role: 'system',
-                            content: 'You are a helpful assistant that helps with language correction and glossary term matching.',
-                        },
-                        {
-                            role: 'user',
-                            content: `Please correct spelling errors and remove any irrelevant text from this OCR output, then group terms as pairs: ${text}`,
-                        },
-                    ],
+                    text: text
                 }),
             });
 
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+
             const data = await response.json();
-            const correctedText = data.choices[0].message.content;
+            const correctedText = data.result;
             setProcessedText(correctedText);
             processText(correctedText);  // Call to the function to group into pairs after processing
 
             setLoading(false);
         } catch (error) {
-            console.error('Error calling OpenAI API:', error);
+            console.error('Error calling Cohere API:', error);
             setLoading(false);
         }
     };
 
-    // Function to process text after it's returned from OpenAI
+    // Function to process text after it's returned from Cohere
     const processText = (text) => {
         console.log("Processing text:", text);
         const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
@@ -66,7 +59,7 @@ const App = () => {
             <h1>Image to Quiz</h1>
             <ImageUpload onTextDetected={(text) => {
                 setDetectedText(text);
-                callOpenAIAPI(text);  // Send detected text to OpenAI API
+                callCohereAPI(text);  // Send detected text to Cohere API
             }} />
 
             <h2>Detected Text</h2>
