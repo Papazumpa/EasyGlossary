@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import ImageUpload from './components/ImageUpload'; // Ensure this is the correct path
+import ImageUpload from './components/ImageUpload';  // Ensure this is the correct path
+import Quiz from './components/Quiz';  // Import the Quiz component
 
 const App = () => {
     const [quizData, setQuizData] = useState([]);
@@ -43,15 +44,13 @@ const App = () => {
         console.log("Processing text:", text);
         const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
 
-        // Group lines into pairs
-        const quizPairs = [];
-        for (let i = 0; i < lines.length; i += 2) {
-            if (lines[i + 1]) {
-                quizPairs.push({ term: lines[i], definition: lines[i + 1] });
-            }
-        }
+        // Split each line by the '=' sign to create pairs
+        const quizPairs = lines.map(line => {
+            const [german, swedish] = line.split('=').map(part => part.trim());
+            return { german, swedish };
+        });
 
-        setQuizData(quizPairs);
+        setQuizData(quizPairs);  // Store the quiz pairs
     };
 
     return (
@@ -70,13 +69,11 @@ const App = () => {
                     <h2>Processed Text (Corrected & Paired)</h2>
                     <pre>{processedText}</pre>
 
-                    <h2>Generated Quiz</h2>
                     {quizData.length > 0 ? (
-                        <ul>
-                            {quizData.map((pair, index) => (
-                                <li key={index}>{pair.term} = {pair.definition}</li>
-                            ))}
-                        </ul>
+                        <>
+                            <h2>Generated Quiz</h2>
+                            <Quiz phrases={quizData} />  {/* Pass quizData to the Quiz component */}
+                        </>
                     ) : (
                         <p>No quiz generated yet.</p>
                     )}
