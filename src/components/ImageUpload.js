@@ -7,8 +7,8 @@ const ImageUpload = ({ onTextDetected }) => {
     const processImage = async (file) => {
         setLoading(true);
 
-        // Resize and convert image to grayscale
-        const processedFile = await resizeAndGrayscaleImage(file, 1024);
+        // Resize and convert image to grayscale with dynamic compression
+        const processedFile = await resizeAndGrayscaleImage(file, 1024); // 1024 KB limit
 
         const formData = new FormData();
         formData.append('apikey', 'K84884375988957'); // Replace with your actual API key
@@ -49,19 +49,8 @@ const ImageUpload = ({ onTextDetected }) => {
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
 
-                    // Set canvas dimensions to the image dimensions
                     canvas.width = img.width;
                     canvas.height = img.height;
-
-                    let quality = 1;
-
-                    // Resize if the image is larger than maxSizeKB
-                    if (file.size / 1024 > maxSizeKB) {
-                        const scaleFactor = Math.sqrt(maxSizeKB * 1024 / file.size);
-                        canvas.width = img.width * scaleFactor;
-                        canvas.height = img.height * scaleFactor;
-                        quality = 0.7; // Adjust quality for compression
-                    }
 
                     // Draw image to the canvas
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
@@ -81,14 +70,25 @@ const ImageUpload = ({ onTextDetected }) => {
 
                     ctx.putImageData(imageData, 0, 0);
 
-                    // Convert canvas to blob and resolve the file
-                    canvas.toBlob(
-                        (blob) => {
-                            resolve(new File([blob], file.name, { type: file.type }));
-                        },
-                        file.type,
-                        quality // Adjust the quality (optional)
-                    );
+                    // Start compression loop to ensure file size is under maxSizeKB
+                    let quality = 1.0;
+                    const compressImage = () => {
+                        return new Promise((resolveCompress) => {
+                            canvas.toBlob((blob) => {
+                                if (blob.size / 1024 > maxSizeKB && quality > 0.1) {
+                                    // If file is too large, reduce quality and try again
+                                    quality -= 0.1;
+                                    compressImage().then(resolveCompress);
+                                } else {
+                                    resolveCompress(blob); // Return compressed blob
+                                }
+                            }, file.type, quality); // Compress with current quality
+                        });
+                    };
+
+                    compressImage().then((blob) => {
+                        resolve(new File([blob], file.name, { type: file.type }));
+                    });
                 };
             };
             reader.readAsDataURL(file);
@@ -99,7 +99,7 @@ const ImageUpload = ({ onTextDetected }) => {
         const file = e.target.files[0];
         if (file) {
             setImage(URL.createObjectURL(file));
-            await processImage(file);
+            processImage(file);
         }
     };
 
