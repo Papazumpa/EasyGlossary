@@ -1,19 +1,19 @@
-import cohere from 'cohere-ai';
+import { CohereClient } from 'cohere-ai';
 
-cohere.configure({ apiKey: process.env.COHERE_API_KEY });  // Configure with your API key
+const client = new CohereClient({ token: process.env.COHERE_API_KEY });
 
 export default async function handler(req, res) {
     if (req.method === 'POST') {
-        const { text } = req.body;
+        const { ocrOutput } = req.body;  // Get the OCR output from the request body
 
         try {
-            const response = await cohere.generate({
-                model: 'command-r-plus-08-2024',  // Choose the model based on your requirements
-                prompt: `Correct and align this glossary text: ${text}`,
-                max_tokens: 1000,  // Adjust as needed
+            const response = await client.chat({
+                message: `Please correct spelling errors and remove any irrelevant text from this OCR output. Group phrases as pairs with the corresponding phrases for the two input languages. This is the input: ${ocrOutput}`,
+                model: 'command-r-plus-08-2024',
+                preamble: 'You are a helpful assistant that helps with language correction and glossary phrase matching.'
             });
 
-            const correctedText = response.body.generations[0].text;
+            const correctedText = response.body.text;
             res.status(200).json({ result: correctedText });
         } catch (error) {
             console.error('Error calling Cohere API:', error);
