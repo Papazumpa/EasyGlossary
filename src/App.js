@@ -49,45 +49,65 @@ const App = () => {
         const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
 
         // Extract languageOne, languageTwo, l1Title, l2Title and remove them from the questions
-        const specialLines = {
-            languageOne: '',
-            languageTwo: '',
-            l1Title: '',
-            l2Title: ''
-        };
+const processText = (text) => {
+    console.log("Processing text:", text);
+    const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
 
-        const quizPairs = lines.map(line => {
-            // Extract special lines
-            if (line.includes('language one =')) {
-                specialLines.languageOne = line.split('=')[1].trim();
-                return null;
-            }
-            if (line.includes('language two =')) {
-                specialLines.languageTwo = line.split('=')[1].trim();
-                return null;
-            }
-            if (line.includes('l1 title =')) {
-                specialLines.l1Title = line.split('=')[1].trim();
-                return null;
-            }
-            if (line.includes('l2 title =')) {
-                specialLines.l2Title = line.split('=')[1].trim();
-                return null;
-            }
-
-            // Split each line by the '=' sign to create pairs
-            const [german, swedish] = line.split('=').map(part => part.trim());
-            return { german, swedish };
-        }).filter(Boolean);  // Remove null values (special lines)
-
-        setQuizData(quizPairs);  // Store the quiz pairs
-
-        // Set special values (language names and titles)
-        setLanguageOne(specialLines.languageOne);
-        setLanguageTwo(specialLines.languageTwo);
-        setL1Title(specialLines.l1Title);
-        setL2Title(specialLines.l2Title);
+    const specialLines = {
+        languageOne: '',
+        languageTwo: '',
+        l1Title: '',
+        l2Title: ''
     };
+
+    const quizPairs = lines.map(line => {
+        // Extract special lines
+        if (line.includes('language one =')) {
+            specialLines.languageOne = line.split('=')[1].trim();
+            return null;
+        }
+        if (line.includes('language two =')) {
+            specialLines.languageTwo = line.split('=')[1].trim();
+            return null;
+        }
+        if (line.includes('l1 title =')) {
+            specialLines.l1Title = line.split('=')[1].trim();
+            return null;
+        }
+        if (line.includes('l2 title =')) {
+            specialLines.l2Title = line.split('=')[1].trim();
+            return null;
+        }
+
+        // Split each line by the '=' sign to create pairs
+        const [phraseOne, phraseTwo] = line.split('=').map(part => part.trim());
+
+        // Check if either phrase is missing
+        if (!phraseTwo) {
+            // Prompt the user for input
+            const userResponse = window.prompt(`The corresponding phrase for "${phraseOne}" is missing. Enter one or leave empty to remove this line:`);
+            
+            // If the user provided input, use it as the second phrase
+            if (userResponse) {
+                return { german: phraseOne, swedish: userResponse.trim() };
+            } else {
+                // If the user did not provide input, return null to remove the line
+                return null;
+            }
+        }
+
+        return { german: phraseOne, swedish: phraseTwo };
+    }).filter(Boolean);  // Remove null values (lines without user input or empty pairs)
+
+    // Set special values (language names and titles)
+    setLanguageOne(specialLines.languageOne);
+    setLanguageTwo(specialLines.languageTwo);
+    setL1Title(specialLines.l1Title);
+    setL2Title(specialLines.l2Title);
+
+    // Set the quiz pairs
+    setQuizData(quizPairs);
+};
 
     return (
         <div>
