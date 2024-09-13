@@ -12,7 +12,7 @@ export default async function handler(req, res) {
 
         try {
             const response = await client.chat({
-                message: `Please correct spelling errors and remove any irrelevant text from this OCR output. I need the phrases paired next to each other, with the first languages phrase on the left and the corresponding second languages phrase on the right separated by a period and comma ., (example output: hello.,Bonjour (new line) nice meeting you.,Plaisir de vous rencontrer (new line) etc.). If a phrase is missing in one language, please leave the missing side blank. Here is the input text: ${ocrOutput}`,
+                message: `Please correct spelling errors and remove any irrelevant text from this OCR output. I need the phrases paired next to each other, with the first languages phrase on the left and the corresponding second languages phrase on the right separated by a period and comma (.,) (example output: hello.,Bonjour (new line) nice meeting you.,Plaisir de vous rencontrer (new line) etc.). If a phrase is missing in one language, please leave the missing side blank so every corresponding phrase is on the same line. Here is the input text: ${ocrOutput}`,
                 model: 'command-r-plus-08-2024',
                 preamble: 'You are a helpful assistant that helps with language correction and glossary phrase matching.'
             });
