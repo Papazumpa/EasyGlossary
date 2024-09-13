@@ -1,24 +1,21 @@
-const { CohereClient } = require('cohere-ai');
+import cohere from 'cohere-ai';
 
-// Initialize the CohereClient with your API key
-const cohere = new CohereClient({
-    token: process.env.COHERE_API_KEY,  // Use environment variable for API key
-});
+cohere.init({ apiKey: process.env.COHERE_API_KEY }); // Initialize with your API key
 
 export default async function handler(req, res) {
     if (req.method === 'POST') {
-        const { text } = req.body;
+        const { message, chat_history, model = 'command-r-plus-08-2024' } = req.body;
 
         try {
-            // Generate response from Cohere
             const response = await cohere.chat({
-                message: `Correct and align this glossary text: ${text}`,
+                messages: message,
+                chat_history: chat_history || [], // Optional chat history
+                model: model, // Optional model name
+                stream: false, // Default to false
             });
 
-            // Extract corrected text from response
-            const correctedText = response.body.choices[0].message.text;
-
-            res.status(200).json({ result: correctedText });
+            const reply = response.body.text;
+            res.status(200).json({ result: reply });
         } catch (error) {
             console.error('Error calling Cohere API:', error);
             res.status(500).json({ error: 'API request failed', details: error.message });
