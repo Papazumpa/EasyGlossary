@@ -13,7 +13,13 @@ export default async function handler(req, res) {
                 preamble: 'You are a helpful assistant that helps with language correction and glossary phrase matching.'
             });
 
-            const correctedText = response.body.text;
+            // Log the entire response for debugging
+            console.log('Cohere API response:', response);
+
+            // Access the 'text' property from the response
+            const correctedText = response.text;
+
+            // Send the corrected text as the response
             res.status(200).json({ result: correctedText });
         } catch (error) {
             console.error('Error calling Cohere API:', error);
