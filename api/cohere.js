@@ -1,29 +1,26 @@
-// api/cohere.js
+import cohere from 'cohere-ai';
 
-const axios = require("axios");
+cohere.init(process.env.COHERE_API_KEY);  // Initialize Cohere with your API key
 
 export default async function handler(req, res) {
-    const ocrText = req.body.text;
+    if (req.method === 'POST') {
+        const text = req.body.text;
 
-    const options = {
-        method: 'POST',
-        url: 'https://api.cohere.ai/generate',
-        headers: {
-            'Authorization': `Bearer ${process.env.COHERE_API_KEY}`, // Use your environment variable for Cohere API key
-            'Content-Type': 'application/json',
-        },
-        data: {
-            model: 'command-xlarge-2023',  // Cohere model selection
-            prompt: `Correct and align this glossary text: ${ocrText}`,
-            max_tokens: 1000,  // Limit as necessary
-            temperature: 0.7  // Adjust the creativity level
+        try {
+            const response = await cohere.generate({
+                model: 'command-r-plus-08-2024',  // Use the correct model name
+                prompt: `Correct and align this glossary text: ${text}`,
+                maxTokens: 1000,  // Adjust as needed
+            });
+
+            const correctedText = response.body.generations[0].text;
+            res.status(200).json({ result: correctedText });
+        } catch (error) {
+            console.error('Error calling Cohere API:', error);
+            res.status(500).json({ error: 'API request failed', details: error.message });
         }
-    };
-
-    try {
-        const response = await axios(options);
-        res.status(200).json({ result: response.data.generations[0].text });
-    } catch (error) {
-        res.status(500).json({ error: 'API request failed', details: error.message });
+    } else {
+        res.setHeader('Allow', ['POST']);
+        res.status(405).end(`Method ${req.method} Not Allowed`);
     }
 }
