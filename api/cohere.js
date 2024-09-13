@@ -12,7 +12,7 @@ export default async function handler(req, res) {
 
         try {
             const response = await client.chat({
-                message: `Please correct spelling errors and remove any irrelevant text from this OCR output. I need the phrases paired next to each other, with the first languages phrase on the left and the corresponding second languages phrase on the right separated by a equals-sign = and every pair on a new line (example output: hello,Bonjour (new line) nice meeting you,Plaisir de vous rencontrer (new line) etc.). If a phrase is missing in one language, please leave the missing side blank. Here is the input text: ${ocrOutput}`,
+                message: `Please correct spelling errors and remove any irrelevant text from this OCR output. I need the phrases paired next to each other, with the first languages phrase on the left and the corresponding second languages phrase on the right separated by a equals-sign = and every pair on a new line (example output: hello,Bonjour (new line) nice meeting you,Plaisir de vous rencontrer (new line) etc.). If a phrase is missing in one language, please leave the missing side blank. in the end you should add four more phrases (which will act as values) : language one (which should be equal to the language used on the right side) and languge two (which should be equal to the language used on the left side) also add the values: l1 title and l2 title which should describe the terms topic in one sentance like(example: greetings and Formules de politesse)  Here is the input text: ${ocrOutput}`,
                 model: 'command-r-plus-08-2024',
                 preamble: 'You are a helpful assistant that helps with language correction and glossary phrase matching.'
             });
