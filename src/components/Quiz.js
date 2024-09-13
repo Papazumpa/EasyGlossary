@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from 'react';
 
-const Quiz = ({ phrases }) => {
-    const [answerLanguage, setAnswerLanguage] = useState(1); // 1 for before the '=', 2 for after
+const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
+    const [answerLanguage, setAnswerLanguage] = useState(1); // 1 for language one, 2 for language two
     const [currentQuestion, setCurrentQuestion] = useState(null);
     const [options, setOptions] = useState([]);
     const [score, setScore] = useState(0);
     const [wrongQuestions, setWrongQuestions] = useState([]);
+    const [correctQuestions, setCorrectQuestions] = useState([]);
     const [quizInProgress, setQuizInProgress] = useState(false);
     const [quizHistory, setQuizHistory] = useState([]);
     const [message, setMessage] = useState('');
+
+    // Filter out special terms like "language one", "language two", "l1 title", and "l2 title"
+    const validPhrases = phrases.filter(pair => 
+        !["language one", "language two", "l1 title", "l2 title"].includes(pair.german.toLowerCase())
+    );
 
     // Start the quiz by selecting the first question
     const startQuiz = () => {
@@ -18,13 +24,19 @@ const Quiz = ({ phrases }) => {
 
     // Pick a random question and generate options
     const pickRandomQuestion = () => {
-        if (phrases.length === 0) return;
+        const remainingQuestions = validPhrases.filter(pair => !correctQuestions.includes(pair));
 
-        const question = phrases[Math.floor(Math.random() * phrases.length)];
+        if (remainingQuestions.length === 0) {
+            // No questions left, end quiz
+            endQuiz();
+            return;
+        }
+
+        const question = remainingQuestions[Math.floor(Math.random() * remainingQuestions.length)];
         setCurrentQuestion(question);
 
         // Generate four random answer options (one correct, three random)
-        let otherOptions = phrases
+        let otherOptions = remainingQuestions
             .filter(pair => pair !== question)
             .sort(() => 0.5 - Math.random()) // Randomize
             .slice(0, 3); // Pick 3 wrong options
@@ -46,6 +58,7 @@ const Quiz = ({ phrases }) => {
         if (answer === correctAnswer) {
             setMessage('Correct!');
             setScore(score + 1);
+            setCorrectQuestions([...correctQuestions, currentQuestion]); // Add question to correctQuestions
         } else {
             setMessage(`Wrong! The correct answer was: ${correctAnswer}`);
             setWrongQuestions([...wrongQuestions, currentQuestion]); // Add wrong question to the end
@@ -58,24 +71,18 @@ const Quiz = ({ phrases }) => {
         }, 1000);
     };
 
-    // Final quiz statistics
+    // End the quiz and show stats
     const endQuiz = () => {
-        const totalTime = quizHistory.reduce((acc, attempt) => acc + attempt.timeTaken, 0);
-        return {
-            totalQuestions: phrases.length,
-            score: score,
-            incorrectAnswers: wrongQuestions.length,
-            totalTime,
-        };
+        setQuizInProgress(false);
     };
 
     return (
         <div>
+            <h1>{answerLanguage === 1 ? l1Title : l2Title}</h1>
+
             {quizInProgress ? (
                 <div>
-                    <h2>Quiz In Progress</h2>
-
-                    {currentQuestion && (
+                    {currentQuestion ? (
                         <>
                             <p>What is the translation of: <strong>{answerLanguage === 1 ? currentQuestion.swedish : currentQuestion.german}</strong>?</p>
 
@@ -87,24 +94,29 @@ const Quiz = ({ phrases }) => {
 
                             <p>{message}</p>
                         </>
+                    ) : (
+                        <p>No more questions!</p>
                     )}
                 </div>
             ) : (
                 <div>
                     <h2>Select Answer Language</h2>
                     <select onChange={(e) => setAnswerLanguage(Number(e.target.value))}>
-                        <option value={1}>Language 1 (Before =)</option>
-                        <option value={2}>Language 2 (After =)</option>
+                        <option value={1}>{languageOne}</option>
+                        <option value={2}>{languageTwo}</option>
                     </select>
 
                     <button onClick={startQuiz}>Start Quiz</button>
                 </div>
             )}
 
-            {quizInProgress && (
+            {!quizInProgress && correctQuestions.length === validPhrases.length && (
                 <div>
-                    <h2>Score: {score}</h2>
-                    <p>Questions Answered: {score + wrongQuestions.length}</p>
+                    <h2>Quiz Complete!</h2>
+                    <p>Score: {score}</p>
+                    <p>Total Questions: {validPhrases.length}</p>
+                    <p>Incorrect Answers: {wrongQuestions.length}</p>
+                    <p>Tries: {score + wrongQuestions.length}</p>
                 </div>
             )}
         </div>
