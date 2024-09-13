@@ -8,7 +8,7 @@ const App = () => {
     const [loading, setLoading] = useState(false);
 
     // Function to call Cohere API
-    const callCohereAPI = async (text) => {
+    const callCohereAPI = async (ocrOutput) => {
         setLoading(true);
 
         try {
@@ -18,7 +18,7 @@ const App = () => {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    text: text
+                    ocrOutput: ocrOutput // Pass ocrOutput instead of text
                 }),
             });
 
