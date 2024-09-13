@@ -7,12 +7,12 @@ const ImageUpload = ({ onTextDetected }) => {
     const processImage = async (file) => {
         setLoading(true);
 
-        // Resize image if it's larger than 1024 KB
-        const resizedFile = await resizeImage(file, 1024);
+        // Resize and convert image to grayscale
+        const processedFile = await resizeAndGrayscaleImage(file, 1024);
 
         const formData = new FormData();
         formData.append('apikey', 'K84884375988957'); // Replace with your actual API key
-        formData.append('file', resizedFile);
+        formData.append('file', processedFile);
         formData.append('language', 'eng');
 
         try {
@@ -37,7 +37,7 @@ const ImageUpload = ({ onTextDetected }) => {
         }
     };
 
-    const resizeImage = (file, maxSizeKB) => {
+    const resizeAndGrayscaleImage = (file, maxSizeKB) => {
         return new Promise((resolve) => {
             const img = new Image();
             const reader = new FileReader();
@@ -49,22 +49,39 @@ const ImageUpload = ({ onTextDetected }) => {
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
 
-                    // Set the canvas dimensions to the image dimensions
+                    // Set canvas dimensions to the image dimensions
                     canvas.width = img.width;
                     canvas.height = img.height;
 
-                    // Resize if image is larger than maxSizeKB
                     let quality = 1;
+
+                    // Resize if the image is larger than maxSizeKB
                     if (file.size / 1024 > maxSizeKB) {
                         const scaleFactor = Math.sqrt(maxSizeKB * 1024 / file.size);
                         canvas.width = img.width * scaleFactor;
                         canvas.height = img.height * scaleFactor;
-                        quality = 0.7;  // Adjust quality for compression
+                        quality = 0.7; // Adjust quality for compression
                     }
 
-                    // Draw the image to the canvas
+                    // Draw image to the canvas
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
+                    // Convert to grayscale
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const data = imageData.data;
+
+                    for (let i = 0; i < data.length; i += 4) {
+                        const red = data[i];
+                        const green = data[i + 1];
+                        const blue = data[i + 2];
+                        const grayscale = 0.299 * red + 0.587 * green + 0.114 * blue;
+
+                        data[i] = data[i + 1] = data[i + 2] = grayscale; // Set the RGB to grayscale value
+                    }
+
+                    ctx.putImageData(imageData, 0, 0);
+
+                    // Convert canvas to blob and resolve the file
                     canvas.toBlob(
                         (blob) => {
                             resolve(new File([blob], file.name, { type: file.type }));
@@ -82,7 +99,7 @@ const ImageUpload = ({ onTextDetected }) => {
         const file = e.target.files[0];
         if (file) {
             setImage(URL.createObjectURL(file));
-            processImage(file);
+            await processImage(file);
         }
     };
 
