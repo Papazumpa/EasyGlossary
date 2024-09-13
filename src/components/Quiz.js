@@ -1,139 +1,111 @@
 import React, { useState, useEffect } from 'react';
 
 const Quiz = ({ phrases }) => {
-    const [answerLanguage, setAnswerLanguage] = useState(1); // 1 for German, 2 for Swedish
-    const [questionIndex, setQuestionIndex] = useState(0);
-    const [choices, setChoices] = useState([]);
-    const [correctAnswers, setCorrectAnswers] = useState([]);
-    const [incorrectAnswers, setIncorrectAnswers] = useState([]);
-    const [isAnswerCorrect, setIsAnswerCorrect] = useState(null);
-    const [quizStartTime, setQuizStartTime] = useState(null);
-    const [tries, setTries] = useState(0);
-    const [stats, setStats] = useState(null);
+    const [answerLanguage, setAnswerLanguage] = useState(1); // 1 for before the '=', 2 for after
+    const [currentQuestion, setCurrentQuestion] = useState(null);
+    const [options, setOptions] = useState([]);
+    const [score, setScore] = useState(0);
+    const [wrongQuestions, setWrongQuestions] = useState([]);
+    const [quizInProgress, setQuizInProgress] = useState(false);
+    const [quizHistory, setQuizHistory] = useState([]);
+    const [message, setMessage] = useState('');
 
-    // Helper to randomize array order
-    const shuffleArray = (array) => {
-        return array.sort(() => Math.random() - 0.5);
-    };
-
-    // Start the quiz by randomizing phrases
+    // Start the quiz by selecting the first question
     const startQuiz = () => {
-        setCorrectAnswers([]);
-        setIncorrectAnswers(shuffleArray(phrases));
-        setQuestionIndex(0);
-        setIsAnswerCorrect(null);
-        setTries(0);
-        setQuizStartTime(Date.now());
+        setQuizInProgress(true);
+        pickRandomQuestion();
     };
 
-    // Prepare the next question
-    const prepareQuestion = () => {
-        if (incorrectAnswers.length === 0) {
-            endQuiz();
-            return;
-        }
-        
-        // Pick a random incorrect answer for the question
-        const currentPhrase = incorrectAnswers[questionIndex];
-        const correctAnswer = answerLanguage === 1 ? currentPhrase.german : currentPhrase.swedish;
-        const questionText = answerLanguage === 1 ? currentPhrase.swedish : currentPhrase.german;
-        
-        // Generate 4 choices: 1 correct + 3 random incorrect answers
-        const otherChoices = incorrectAnswers.filter(p => p !== currentPhrase);
-        const randomChoices = shuffleArray(otherChoices).slice(0, 3).map(p => (answerLanguage === 1 ? p.german : p.swedish));
-        const allChoices = shuffleArray([correctAnswer, ...randomChoices]);
+    // Pick a random question and generate options
+    const pickRandomQuestion = () => {
+        if (phrases.length === 0) return;
 
-        setChoices(allChoices);
+        const question = phrases[Math.floor(Math.random() * phrases.length)];
+        setCurrentQuestion(question);
+
+        // Generate four random answer options (one correct, three random)
+        let otherOptions = phrases
+            .filter(pair => pair !== question)
+            .sort(() => 0.5 - Math.random()) // Randomize
+            .slice(0, 3); // Pick 3 wrong options
+
+        // Correct answer depending on selected answer language
+        const correctAnswer = answerLanguage === 1 ? question.german : question.swedish;
+
+        // Add the correct answer to the options and shuffle
+        const allOptions = [...otherOptions.map(pair => answerLanguage === 1 ? pair.german : pair.swedish), correctAnswer];
+        allOptions.sort(() => 0.5 - Math.random());
+
+        setOptions(allOptions); // Set options for the current question
     };
 
-    // Handle the user answer
-    const handleAnswer = (selectedChoice) => {
-        const currentPhrase = incorrectAnswers[questionIndex];
-        const correctAnswer = answerLanguage === 1 ? currentPhrase.german : currentPhrase.swedish;
+    // Handle answering the question
+    const handleAnswer = (answer) => {
+        const correctAnswer = answerLanguage === 1 ? currentQuestion.german : currentQuestion.swedish;
 
-        setTries(tries + 1);
-
-        if (selectedChoice === correctAnswer) {
-            // Correct answer
-            setCorrectAnswers([...correctAnswers, currentPhrase]);
-            setIsAnswerCorrect(true);
-            // Remove the correctly answered phrase from the list
-            setIncorrectAnswers(incorrectAnswers.filter((_, index) => index !== questionIndex));
+        if (answer === correctAnswer) {
+            setMessage('Correct!');
+            setScore(score + 1);
         } else {
-            // Incorrect answer
-            setIsAnswerCorrect(false);
+            setMessage(`Wrong! The correct answer was: ${correctAnswer}`);
+            setWrongQuestions([...wrongQuestions, currentQuestion]); // Add wrong question to the end
         }
+
+        // Move to the next question after a short delay
+        setTimeout(() => {
+            setMessage('');
+            pickRandomQuestion();
+        }, 1000);
     };
 
-    // Go to the next question
-    const nextQuestion = () => {
-        setQuestionIndex((prevIndex) => (prevIndex + 1) % incorrectAnswers.length);
-        setIsAnswerCorrect(null);
-        prepareQuestion();
-    };
-
-    // End the quiz and calculate statistics
+    // Final quiz statistics
     const endQuiz = () => {
-        const timeTaken = (Date.now() - quizStartTime) / 1000; // Time in seconds
-        setStats({
+        const totalTime = quizHistory.reduce((acc, attempt) => acc + attempt.timeTaken, 0);
+        return {
             totalQuestions: phrases.length,
-            totalTries: tries,
-            totalWrongAnswers: tries - correctAnswers.length,
-            timeTaken,
-        });
+            score: score,
+            incorrectAnswers: wrongQuestions.length,
+            totalTime,
+        };
     };
-
-    // Effect to prepare the first question when the quiz starts
-    useEffect(() => {
-        if (quizStartTime) {
-            prepareQuestion();
-        }
-    }, [quizStartTime]);
 
     return (
         <div>
-            {!quizStartTime ? (
-                <>
-                    <h2>Select Answer Language</h2>
-                    <button onClick={() => setAnswerLanguage(1)}>German to Swedish</button>
-                    <button onClick={() => setAnswerLanguage(2)}>Swedish to German</button>
-                    <button onClick={startQuiz}>Start Quiz</button>
-                </>
-            ) : (
-                <>
-                    {stats ? (
-                        <div>
-                            <h2>Quiz Completed</h2>
-                            <p>Total Questions: {stats.totalQuestions}</p>
-                            <p>Total Tries: {stats.totalTries}</p>
-                            <p>Total Wrong Answers: {stats.totalWrongAnswers}</p>
-                            <p>Time Taken: {stats.timeTaken.toFixed(2)} seconds</p>
-                        </div>
-                    ) : (
-                        <>
-                            <h2>Question {questionIndex + 1}</h2>
-                            <p>{answerLanguage === 1 ? 'Translate from Swedish' : 'Translate from German'}:</p>
-                            <h3>{answerLanguage === 1 ? incorrectAnswers[questionIndex].swedish : incorrectAnswers[questionIndex].german}</h3>
+            {quizInProgress ? (
+                <div>
+                    <h2>Quiz In Progress</h2>
 
-                            {choices.map((choice, index) => (
-                                <button key={index} onClick={() => handleAnswer(choice)}>
-                                    {choice}
+                    {currentQuestion && (
+                        <>
+                            <p>What is the translation of: <strong>{answerLanguage === 1 ? currentQuestion.swedish : currentQuestion.german}</strong>?</p>
+
+                            {options.map((option, index) => (
+                                <button key={index} onClick={() => handleAnswer(option)}>
+                                    {option}
                                 </button>
                             ))}
 
-                            {isAnswerCorrect !== null && (
-                                <div>
-                                    {isAnswerCorrect ? (
-                                        <p>Correct!</p>
-                                    ) : (
-                                        <p>Wrong! The correct answer was: {answerLanguage === 1 ? incorrectAnswers[questionIndex].german : incorrectAnswers[questionIndex].swedish}</p>
-                                    )}
-                                    <button onClick={nextQuestion}>Next Question</button>
-                                </div>
-                            )}
+                            <p>{message}</p>
                         </>
                     )}
-                </>
+                </div>
+            ) : (
+                <div>
+                    <h2>Select Answer Language</h2>
+                    <select onChange={(e) => setAnswerLanguage(Number(e.target.value))}>
+                        <option value={1}>Language 1 (Before =)</option>
+                        <option value={2}>Language 2 (After =)</option>
+                    </select>
+
+                    <button onClick={startQuiz}>Start Quiz</button>
+                </div>
+            )}
+
+            {quizInProgress && (
+                <div>
+                    <h2>Score: {score}</h2>
+                    <p>Questions Answered: {score + wrongQuestions.length}</p>
+                </div>
             )}
         </div>
     );
