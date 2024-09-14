@@ -5,6 +5,8 @@ import Quiz from './components/Quiz';  // Quiz component
 import HomePage from './pages/HomePage';  // Home page
 import AboutPage from './pages/AboutPage';  // About page
 import QuizPage from './pages/QuizPage';  // Quiz page for individual quizzes
+import { Analytics } from "@vercel/analytics/react"
+import { SpeedInsights } from "@vercel/speed-insights/react"
 
 const App = () => {
     const [quizData, setQuizData] = useState([]);
