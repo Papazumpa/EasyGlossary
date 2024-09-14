@@ -6,7 +6,7 @@ import HomePage from './pages/HomePage';
 import AboutPage from './pages/AboutPage'; 
 import QuizPage from './pages/QuizPage'; 
 import QuizCreationForm from './components/QuizCreationForm'; // Import the new component
-import firebase from './firebase'; // Import Firebase for sending data
+import { db } from './firebase'; // Use db instead of firebase
 
 const App = () => {
     const [quizData, setQuizData] = useState([]);
