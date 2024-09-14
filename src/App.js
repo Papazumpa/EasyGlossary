@@ -6,8 +6,7 @@ import HomePage from './pages/HomePage';
 import AboutPage from './pages/AboutPage'; 
 import QuizPage from './pages/QuizPage'; 
 import QuizCreationForm from './components/QuizCreationForm'; // Import the new component
-import { Analytics } from "@vercel/analytics/react";
-import { SpeedInsights } from "@vercel/speed-insights/react";
+import firebase from './firebase'; // Import Firebase for sending data
 
 const App = () => {
     const [quizData, setQuizData] = useState([]);
@@ -82,13 +81,13 @@ const App = () => {
             if (!phraseTwo) {
                 const userResponse = window.prompt(`The corresponding phrase for "${phraseOne}" is missing. Enter one or leave empty to remove this line:`);
                 if (userResponse) {
-                    return { german: phraseOne, swedish: userResponse.trim() };
+                    return { phraseOne, phraseTwo: userResponse.trim() };
                 } else {
                     return null;
                 }
             }
 
-            return { german: phraseOne, swedish: phraseTwo };
+            return { phraseOne, phraseTwo };
         }).filter(Boolean);
 
         setLanguageOne(specialLines.languageOne);
@@ -98,20 +97,49 @@ const App = () => {
         setQuizData(quizPairs);
     };
 
+    const handleLanguageSelection = (selectedLanguage) => {
+        // Set the language and quiz title based on selection
+        if (selectedLanguage === 'Language One') {
+            setL1Title(`${languageOne} Quiz`);
+            setL2Title('');
+        } else {
+            setL1Title('');
+            setL2Title(`${languageTwo} Quiz`);
+        }
+
+        // Create quiz document to send to Firebase
+        const quizDocument = {
+            languageOne: languageOne,
+            languageTwo: languageTwo,
+            selectedLanguage: selectedLanguage,
+            quizTitle: selectedLanguage === 'Language One' ? `${languageOne} Quiz` : `${languageTwo} Quiz`,
+            quizData: quizData
+        };
+
+        // Send to Firebase
+        firebase.firestore().collection('quizzes').add(quizDocument)
+            .then(() => {
+                console.log('Quiz document created successfully!');
+            })
+            .catch((error) => {
+                console.error('Error creating quiz document:', error);
+            });
+    };
+
     return (
         <Router>
             <Routes>
-                <Route path="/" element={<UploadPage setDetectedText={setDetectedText} callCohereAPI={callCohereAPI} detectedText={detectedText} loading={loading} processedText={processedText} quizData={quizData} />} />
+                <Route path="/" element={<UploadPage setDetectedText={setDetectedText} callCohereAPI={callCohereAPI} detectedText={detectedText} loading={loading} processedText={processedText} quizData={quizData} handleLanguageSelection={handleLanguageSelection} />} />
                 <Route path="/home" element={<HomePage />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/quiz/:quizName" element={<QuizPage quizData={quizData} />} />
-                <Route path="/create-quiz" element={<QuizCreationForm />} /> {/* Add route for quiz creation */}
+                <Route path="/create-quiz" element={<QuizCreationForm />} />
             </Routes>
         </Router>
     );
 };
 
-const UploadPage = ({ setDetectedText, callCohereAPI, detectedText, loading, processedText, quizData }) => (
+const UploadPage = ({ setDetectedText, callCohereAPI, detectedText, loading, processedText, quizData, handleLanguageSelection }) => (
     <div>
         <h1>Image to Quiz</h1>
         <ImageUpload onTextDetected={(text) => {
@@ -127,6 +155,13 @@ const UploadPage = ({ setDetectedText, callCohereAPI, detectedText, loading, pro
                 {quizData.length > 0 ? (
                     <>
                         <h2>Generated Quiz</h2>
+                        <div>
+                            {/* Language selection buttons */}
+                            <button onClick={() => handleLanguageSelection('Language One')}>Answer in {languageOne}</button>
+                            <button onClick={() => handleLanguageSelection('Language Two')}>Answer in {languageTwo}</button>
+                        </div>
+
+                        {/* Display Quiz */}
                         <Quiz phrases={quizData} languageOne={languageOne} languageTwo={languageTwo} l1Title={l1Title} l2Title={l2Title} />
                     </>
                 ) : <p>No quiz generated yet.</p>}
