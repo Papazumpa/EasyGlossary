@@ -117,7 +117,7 @@ const App = () => {
         };
 
         // Send to Firebase
-        firebase.firestore().collection('quizzes').add(quizDocument)
+        db.collection('quizzes').add(quizDocument)
             .then(() => {
                 console.log('Quiz document created successfully!');
             })
