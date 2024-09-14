@@ -6,7 +6,7 @@ import HomePage from './pages/HomePage';
 import AboutPage from './pages/AboutPage'; 
 import QuizPage from './pages/QuizPage'; 
 import QuizCreationForm from './components/QuizCreationForm'; // Import the new component
-import firebase from './firebase'; // Import Firebase for sending data
+import { db } from './firebase'; // Import Firestore instance
 
 const App = () => {
     const [quizData, setQuizData] = useState([]);
@@ -116,8 +116,8 @@ const App = () => {
             quizData: quizData
         };
 
-        // Send to Firebase
-        firebase.firestore().collection('quizzes').add(quizDocument)
+        // Send to Firebase Firestore
+        db.collection('quizzes').add(quizDocument)
             .then(() => {
                 console.log('Quiz document created successfully!');
             })
