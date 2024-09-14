@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
-import ImageUpload from './components/ImageUpload';  // Ensure this is the correct path
-import Quiz from './components/Quiz';  // Import the Quiz component
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'; // Import Router components
+import ImageUpload from './components/ImageUpload';  // Image upload component
+import Quiz from './components/Quiz';  // Quiz component
+import HomePage from './pages/HomePage';  // Home page
+import AboutPage from './pages/AboutPage';  // About page
+import QuizPage from './pages/QuizPage';  // Quiz page for individual quizzes
 
 const App = () => {
     const [quizData, setQuizData] = useState([]);
@@ -12,18 +16,17 @@ const App = () => {
     const [l1Title, setL1Title] = useState('');
     const [l2Title, setL2Title] = useState('');
 
-    // Function to call Cohere API
     const callCohereAPI = async (ocrOutput) => {
         setLoading(true);
 
         try {
-            const response = await fetch('/api/cohere', {  // Use the new API route
+            const response = await fetch('/api/cohere', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    ocrOutput: ocrOutput // Pass ocrOutput instead of text
+                    ocrOutput: ocrOutput,
                 }),
             });
 
@@ -34,7 +37,7 @@ const App = () => {
             const data = await response.json();
             const correctedText = data.result;
             setProcessedText(correctedText);
-            processText(correctedText);  // Call to the function to group into pairs after processing
+            processText(correctedText);
 
             setLoading(false);
         } catch (error) {
@@ -43,9 +46,7 @@ const App = () => {
         }
     };
 
-    // Function to process text after it's returned from Cohere
     const processText = (text) => {
-        console.log("Processing text:", text);
         const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
 
         const specialLines = {
@@ -56,7 +57,6 @@ const App = () => {
         };
 
         const quizPairs = lines.map(line => {
-            // Extract special lines
             if (line.includes('language one =')) {
                 specialLines.languageOne = line.split('=')[1].trim();
                 return null;
@@ -74,71 +74,61 @@ const App = () => {
                 return null;
             }
 
-            // Split each line by the '=' sign to create pairs
             const [phraseOne, phraseTwo] = line.split('=').map(part => part.trim());
 
-            // Check if either phrase is missing
             if (!phraseTwo) {
-                // Prompt the user for input
                 const userResponse = window.prompt(`The corresponding phrase for "${phraseOne}" is missing. Enter one or leave empty to remove this line:`);
-                
-                // If the user provided input, use it as the second phrase
                 if (userResponse) {
                     return { german: phraseOne, swedish: userResponse.trim() };
                 } else {
-                    // If the user did not provide input, return null to remove the line
                     return null;
                 }
             }
 
             return { german: phraseOne, swedish: phraseTwo };
-        }).filter(Boolean);  // Remove null values (lines without user input or empty pairs)
+        }).filter(Boolean);
 
-        // Set special values (language names and titles)
         setLanguageOne(specialLines.languageOne);
         setLanguageTwo(specialLines.languageTwo);
         setL1Title(specialLines.l1Title);
         setL2Title(specialLines.l2Title);
-
-        // Set the quiz pairs
         setQuizData(quizPairs);
     };
 
     return (
-        <div>
-            <h1>Image to Quiz</h1>
-            <ImageUpload onTextDetected={(text) => {
-                setDetectedText(text);
-                callCohereAPI(text);  // Send detected text to Cohere API
-            }} />
-
-            <h2>Detected Text</h2>
-            <pre>{detectedText}</pre>
-
-            {loading ? <p>Loading...</p> : (
-                <>
-                    <h2>Processed Text (Corrected & Paired)</h2>
-                    <pre>{processedText}</pre>
-
-                    {quizData.length > 0 ? (
-                        <>
-                            <h2>Generated Quiz</h2>
-                            {/* Pass quizData and language titles to the Quiz component */}
-                            <Quiz
-                                phrases={quizData}
-                                languageOne={languageOne}
-                                languageTwo={languageTwo}
-                                l1Title={l1Title}
-                                l2Title={l2Title}
-                            />
-                        </>
-                    ) : (
-                        <p>No quiz generated yet.</p>
-                    )}
-                </>
-            )}
-        </div>
+        <Router>
+            <Routes>
+                <Route path="/" element={<UploadPage setDetectedText={setDetectedText} callCohereAPI={callCohereAPI} detectedText={detectedText} loading={loading} processedText={processedText} quizData={quizData} />} />
+                <Route path="/home" element={<HomePage />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/quiz/:quizName" element={<QuizPage quizData={quizData} />} />
+            </Routes>
+        </Router>
     );
 };
+
+const UploadPage = ({ setDetectedText, callCohereAPI, detectedText, loading, processedText, quizData }) => (
+    <div>
+        <h1>Image to Quiz</h1>
+        <ImageUpload onTextDetected={(text) => {
+            setDetectedText(text);
+            callCohereAPI(text);
+        }} />
+        <h2>Detected Text</h2>
+        <pre>{detectedText}</pre>
+        {loading ? <p>Loading...</p> : (
+            <>
+                <h2>Processed Text</h2>
+                <pre>{processedText}</pre>
+                {quizData.length > 0 ? (
+                    <>
+                        <h2>Generated Quiz</h2>
+                        <Quiz phrases={quizData} />
+                    </>
+                ) : <p>No quiz generated yet.</p>}
+            </>
+        )}
+    </div>
+);
 
 export default App;
