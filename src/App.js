@@ -6,7 +6,7 @@ import HomePage from './pages/HomePage';
 import AboutPage from './pages/AboutPage'; 
 import QuizPage from './pages/QuizPage'; 
 import QuizCreationForm from './components/QuizCreationForm'; // Import the new component
-import { db } from './firebase'; // Import Firestore instance
+import firebase from './firebase'; // Import Firebase for sending data
 
 const App = () => {
     const [quizData, setQuizData] = useState([]);
@@ -116,8 +116,8 @@ const App = () => {
             quizData: quizData
         };
 
-        // Send to Firebase Firestore
-        db.collection('quizzes').add(quizDocument)
+        // Send to Firebase
+        firebase.firestore().collection('quizzes').add(quizDocument)
             .then(() => {
                 console.log('Quiz document created successfully!');
             })
@@ -129,7 +129,23 @@ const App = () => {
     return (
         <Router>
             <Routes>
-                <Route path="/" element={<UploadPage setDetectedText={setDetectedText} callCohereAPI={callCohereAPI} detectedText={detectedText} loading={loading} processedText={processedText} quizData={quizData} handleLanguageSelection={handleLanguageSelection} />} />
+                <Route path="/" 
+                    element={
+                        <UploadPage 
+                            setDetectedText={setDetectedText} 
+                            callCohereAPI={callCohereAPI} 
+                            detectedText={detectedText} 
+                            loading={loading} 
+                            processedText={processedText} 
+                            quizData={quizData} 
+                            handleLanguageSelection={handleLanguageSelection} 
+                            languageOne={languageOne} 
+                            languageTwo={languageTwo} 
+                            l1Title={l1Title} 
+                            l2Title={l2Title}
+                        />
+                    } 
+                />
                 <Route path="/home" element={<HomePage />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/quiz/:quizName" element={<QuizPage quizData={quizData} />} />
@@ -139,7 +155,19 @@ const App = () => {
     );
 };
 
-const UploadPage = ({ setDetectedText, callCohereAPI, detectedText, loading, processedText, quizData, handleLanguageSelection }) => (
+const UploadPage = ({ 
+    setDetectedText, 
+    callCohereAPI, 
+    detectedText, 
+    loading, 
+    processedText, 
+    quizData, 
+    handleLanguageSelection, 
+    languageOne, 
+    languageTwo, 
+    l1Title, 
+    l2Title 
+}) => (
     <div>
         <h1>Image to Quiz</h1>
         <ImageUpload onTextDetected={(text) => {
@@ -156,12 +184,14 @@ const UploadPage = ({ setDetectedText, callCohereAPI, detectedText, loading, pro
                     <>
                         <h2>Generated Quiz</h2>
                         <div>
-                            {/* Language selection buttons */}
-                            <button onClick={() => handleLanguageSelection('Language One')}>Answer in {languageOne}</button>
-                            <button onClick={() => handleLanguageSelection('Language Two')}>Answer in {languageTwo}</button>
+                            <button onClick={() => handleLanguageSelection('Language One')}>
+                                Answer in {languageOne}
+                            </button>
+                            <button onClick={() => handleLanguageSelection('Language Two')}>
+                                Answer in {languageTwo}
+                            </button>
                         </div>
 
-                        {/* Display Quiz */}
                         <Quiz phrases={quizData} languageOne={languageOne} languageTwo={languageTwo} l1Title={l1Title} l2Title={l2Title} />
                     </>
                 ) : <p>No quiz generated yet.</p>}
