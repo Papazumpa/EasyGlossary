@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { db } from '../firebase'; // Import Firebase config
+import { collection, addDoc } from 'firebase/firestore';
 
 const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
     const [answerLanguage, setAnswerLanguage] = useState(1); // 1 for language one, 2 for language two
@@ -10,11 +12,39 @@ const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
     const [quizInProgress, setQuizInProgress] = useState(false);
     const [quizHistory, setQuizHistory] = useState([]);
     const [message, setMessage] = useState('');
+    const [quizName, setQuizName] = useState('');
+
+    useEffect(() => {
+        if (answerLanguage) {
+            // Set quiz title based on selected language
+            const title = answerLanguage === 1 ? l1Title : l2Title;
+            setQuizName(title);
+            
+            // Create quiz document in Firebase
+            createQuizDocument(title);
+        }
+    }, [answerLanguage]);
 
     // Filter out special terms like "language one", "language two", "l1 title", and "l2 title"
     const validPhrases = phrases.filter(pair => 
         !["language one", "language two", "l1 title", "l2 title"].includes(pair.german.toLowerCase())
     );
+
+    // Create quiz document in Firebase
+    const createQuizDocument = async (title) => {
+        try {
+            const docRef = await addDoc(collection(db, 'quizzes'), {
+                title: title,
+                languageOne: languageOne,
+                languageTwo: languageTwo,
+                answerLanguage: answerLanguage,
+                quizData: validPhrases,
+            });
+            console.log('Quiz document written with ID: ', docRef.id);
+        } catch (e) {
+            console.error('Error adding document: ', e);
+        }
+    };
 
     // Start the quiz by selecting the first question
     const startQuiz = () => {
@@ -78,7 +108,7 @@ const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
 
     return (
         <div>
-            <h1>{answerLanguage === 1 ? l1Title : l2Title}</h1>
+            <h1>{quizName}</h1>
 
             {quizInProgress ? (
                 <div>
