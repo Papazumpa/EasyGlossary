@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'; // Import Router components
-import ImageUpload from './components/ImageUpload';  // Image upload component
-import Quiz from './components/Quiz';  // Quiz component
-import HomePage from './pages/HomePage';  // Home page
-import AboutPage from './pages/AboutPage';  // About page
-import QuizPage from './pages/QuizPage';  // Quiz page for individual quizzes
-import { Analytics } from "@vercel/analytics/react"
-import { SpeedInsights } from "@vercel/speed-insights/react"
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'; 
+import ImageUpload from './components/ImageUpload'; 
+import Quiz from './components/Quiz'; 
+import HomePage from './pages/HomePage'; 
+import AboutPage from './pages/AboutPage'; 
+import QuizPage from './pages/QuizPage'; 
+import QuizCreationForm from './components/QuizCreationForm'; // Import the new component
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 
 const App = () => {
     const [quizData, setQuizData] = useState([]);
@@ -104,6 +105,7 @@ const App = () => {
                 <Route path="/home" element={<HomePage />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/quiz/:quizName" element={<QuizPage quizData={quizData} />} />
+                <Route path="/create-quiz" element={<QuizCreationForm />} /> {/* Add route for quiz creation */}
             </Routes>
         </Router>
     );
@@ -125,7 +127,7 @@ const UploadPage = ({ setDetectedText, callCohereAPI, detectedText, loading, pro
                 {quizData.length > 0 ? (
                     <>
                         <h2>Generated Quiz</h2>
-                        <Quiz phrases={quizData} />
+                        <Quiz phrases={quizData} languageOne={languageOne} languageTwo={languageTwo} l1Title={l1Title} l2Title={l2Title} />
                     </>
                 ) : <p>No quiz generated yet.</p>}
             </>
