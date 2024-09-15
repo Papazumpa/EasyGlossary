@@ -8,8 +8,6 @@ const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
     const [wrongQuestions, setWrongQuestions] = useState([]);
     const [correctQuestions, setCorrectQuestions] = useState([]);
     const [quizInProgress, setQuizInProgress] = useState(false);
-    const [quizHistory, setQuizHistory] = useState([]);
-    const [message, setMessage] = useState('');
     const [quizName, setQuizName] = useState('');
 
     useEffect(() => {
@@ -93,6 +91,18 @@ const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
         <div>
             <h1>{quizName}</h1>
 
+            {!quizInProgress && (
+                <div>
+                    <h2>Select Answer Language</h2>
+                    <select onChange={(e) => setAnswerLanguage(Number(e.target.value))}>
+                        <option value={1}>{languageOne}</option>
+                        <option value={2}>{languageTwo}</option>
+                    </select>
+
+                    <button onClick={startQuiz}>Start Quiz</button>
+                </div>
+            )}
+
             {quizInProgress ? (
                 <div>
                     {currentQuestion ? (
@@ -111,17 +121,7 @@ const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
                         <p>No more questions!</p>
                     )}
                 </div>
-            ) : (
-                <div>
-                    <h2>Select Answer Language</h2>
-                    <select onChange={(e) => setAnswerLanguage(Number(e.target.value))}>
-                        <option value={1}>{languageOne}</option>
-                        <option value={2}>{languageTwo}</option>
-                    </select>
-
-                    <button onClick={startQuiz}>Start Quiz</button>
-                </div>
-            )}
+            ) : null}
 
             {!quizInProgress && correctQuestions.length === validPhrases.length && (
                 <div>
