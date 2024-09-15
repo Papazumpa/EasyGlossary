@@ -8,32 +8,33 @@ const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
     const [wrongQuestions, setWrongQuestions] = useState([]);
     const [correctQuestions, setCorrectQuestions] = useState([]);
     const [quizInProgress, setQuizInProgress] = useState(false);
-    const [quizName, setQuizName] = useState('');
+    const [quizHistory, setQuizHistory] = useState([]);
     const [message, setMessage] = useState('');
+    const [quizName, setQuizName] = useState('');
 
     useEffect(() => {
         if (answerLanguage) {
+            // Set quiz title based on selected language
             const title = answerLanguage === 1 ? l1Title : l2Title;
             setQuizName(title);
+            
+            // Create quiz document in Firebase (if needed)
+            // createQuizDocument(title); // Uncomment if Firebase is being used
         }
-    }, [answerLanguage, l1Title, l2Title]);
+    }, [answerLanguage]);
 
-    useEffect(() => {
-        if (quizInProgress) {
-            pickRandomQuestion();
-        }
-    }, [quizInProgress]);
-
-    // Filter out special terms and any phrases missing translations
-    const validPhrases = phrases.filter(pair =>
-        pair.german && pair.swedish &&
-        !["language one", "language two", "l1 title", "l2 title"].includes(pair.german.toLowerCase())
+    // Filter out special terms like "language one", "language two", "l1 title", and "l2 title"
+    const validPhrases = phrases.filter(pair => 
+        pair.german && pair.swedish && !["language one", "language two", "l1 title", "l2 title"].includes(pair.german.toLowerCase())
     );
+
+    // Create quiz document in Firebase (if needed)
+    // const createQuizDocument = async (title) => { ... }; // Uncomment if Firebase is being used
 
     // Start the quiz by selecting the first question
     const startQuiz = () => {
         setQuizInProgress(true);
-        setMessage(''); // Clear any previous message
+        pickRandomQuestion();
     };
 
     // Pick a random question and generate options
@@ -41,7 +42,8 @@ const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
         const remainingQuestions = validPhrases.filter(pair => !correctQuestions.includes(pair));
 
         if (remainingQuestions.length === 0) {
-            endQuiz(); // End the quiz if there are no remaining questions
+            // No questions left, end quiz
+            endQuiz();
             return;
         }
 
@@ -79,7 +81,7 @@ const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
 
         // Move to the next question after a short delay
         setTimeout(() => {
-            setMessage(''); // Clear message
+            setMessage('');
             pickRandomQuestion();
         }, 1000);
     };
@@ -93,7 +95,25 @@ const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
         <div>
             <h1>{quizName}</h1>
 
-            {!quizInProgress && (
+            {quizInProgress ? (
+                <div>
+                    {currentQuestion ? (
+                        <>
+                            <p>What is the translation of: <strong>{answerLanguage === 1 ? currentQuestion.swedish : currentQuestion.german}</strong>?</p>
+
+                            {options.map((option, index) => (
+                                <button key={index} onClick={() => handleAnswer(option)}>
+                                    {option}
+                                </button>
+                            ))}
+
+                            <p>{message}</p>
+                        </>
+                    ) : (
+                        <p>No more questions!</p>
+                    )}
+                </div>
+            ) : (
                 <div>
                     <h2>Select Answer Language</h2>
                     <select onChange={(e) => setAnswerLanguage(Number(e.target.value))}>
@@ -105,24 +125,17 @@ const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
                 </div>
             )}
 
-            {quizInProgress && currentQuestion && (
-                <div>
-                    <p>What is the translation of: <strong>{answerLanguage === 1 ? currentQuestion.swedish : currentQuestion.german}</strong>?</p>
-
-                    {options.map((option, index) => (
-                        <button key={index} onClick={() => handleAnswer(option)}>
-                            {option}
-                        </button>
-                    ))}
-
-                    <p>{message}</p>
-                </div>
-            )}
-
             {!quizInProgress && correctQuestions.length === validPhrases.length && (
                 <div>
                     <h2>Quiz Complete!</h2>
                     <p>Score: {score}</p>
                     <p>Total Questions: {validPhrases.length}</p>
                     <p>Incorrect Answers: {wrongQuestions.length}</p>
-                    <p>Trie
+                    <p>Tries: {score + wrongQuestions.length}</p>
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default Quiz;
