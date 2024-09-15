@@ -151,3 +151,65 @@ const App = () => {
             />
           } 
         />
+        <Route path="/home" element={<HomePage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/quiz/:quizName" element={<QuizPage quizData={quizData} />} />
+        {/* Removed the old create-quiz route */}
+        {/* <Route path="/create-quiz" element={<QuizCreationForm />} /> */}
+      </Routes>
+    </Router>
+  );
+};
+
+const UploadPage = ({ 
+  setDetectedText, 
+  callCohereAPI, 
+  detectedText, 
+  loading, 
+  processedText, 
+  quizData, 
+  handleLanguageSelection, 
+  languageOne, 
+  languageTwo, 
+  l1Title, 
+  l2Title 
+}) => (
+  <div>
+    <h1>Image to Quiz</h1>
+    <ImageUpload onTextDetected={(text) => {
+      setDetectedText(text);
+      callCohereAPI(text);
+    }} />
+    <h2>Detected Text</h2>
+    <pre>{detectedText}</pre>
+    {loading ? <p>Loading...</p> : (
+      <>
+        <h2>Processed Text</h2>
+        <pre>{processedText}</pre>
+        {quizData.length > 0 ? (
+          <>
+            <h2>Generated Quiz</h2>
+            <div>
+              <button onClick={() => handleLanguageSelection('Language One')}>
+                Answer in {languageOne}
+              </button>
+              <button onClick={() => handleLanguageSelection('Language Two')}>
+                Answer in {languageTwo}
+              </button>
+            </div>
+
+            <Quiz 
+              phrases={quizData} 
+              languageOne={languageOne} 
+              languageTwo={languageTwo} 
+              l1Title={l1Title} 
+              l2Title={l2Title} 
+            />
+          </>
+        ) : <p>No quiz generated yet.</p>}
+      </>
+    )}
+  </div>
+);
+
+export default App;
