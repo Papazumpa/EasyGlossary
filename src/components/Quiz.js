@@ -9,6 +9,7 @@ const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
     const [correctQuestions, setCorrectQuestions] = useState([]);
     const [quizInProgress, setQuizInProgress] = useState(false);
     const [quizName, setQuizName] = useState('');
+    const [message, setMessage] = useState(''); // Define message state
 
     useEffect(() => {
         if (answerLanguage) {
@@ -77,7 +78,7 @@ const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
 
         // Move to the next question after a short delay
         setTimeout(() => {
-            setMessage('');
+            setMessage(''); // Clear message
             pickRandomQuestion();
         }, 1000);
     };
