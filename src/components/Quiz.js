@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { db } from '../firebase'; // Import Firebase config
-import { collection, addDoc } from 'firebase/firestore';
 
 const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
     const [answerLanguage, setAnswerLanguage] = useState(1); // 1 for language one, 2 for language two
