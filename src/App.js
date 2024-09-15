@@ -5,7 +5,6 @@ import Quiz from './components/Quiz';
 import HomePage from './pages/HomePage'; 
 import AboutPage from './pages/AboutPage'; 
 import QuizPage from './pages/QuizPage'; 
-// import { db } from './firebase'; // Commented out Firebase import
 
 const App = () => {
   const [quizData, setQuizData] = useState([]);
@@ -25,9 +24,7 @@ const App = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ocrOutput: ocrOutput,
-        }),
+        body: JSON.stringify({ ocrOutput }),
       });
 
       if (!response.ok) {
@@ -38,17 +35,15 @@ const App = () => {
       const correctedText = data.result;
       setProcessedText(correctedText);
       processText(correctedText);
-
-      setLoading(false);
     } catch (error) {
       console.error('Error calling Cohere API:', error);
+    } finally {
       setLoading(false);
     }
   };
 
   const processText = (text) => {
     const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
-
     const specialLines = {
       languageOne: '',
       languageTwo: '',
@@ -96,21 +91,21 @@ const App = () => {
   };
 
   const handleLanguageSelection = async (selectedLanguage) => {
-    // Set the language and quiz title based on selection
     const quizTitle = selectedLanguage === 'Language One' ? `${languageOne} Quiz` : `${languageTwo} Quiz`;
 
     const quizDocument = {
-      languageOne: languageOne,
-      languageTwo: languageTwo,
-      selectedLanguage: selectedLanguage,
-      quizTitle: quizTitle,
-      quizData: quizData
+      languageOne,
+      languageTwo,
+      selectedLanguage,
+      quizTitle,
+      quizData
     };
 
+    // Removed Firebase-related API call
+    // Uncomment if you have another way to handle quiz saving
+    /*
     try {
-      // Commented out the Firebase-related API call
-      /*
-      const response = await fetch('/api/firebaseHandler', {
+      const response = await fetch('/api/yourBackendHandler', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -124,10 +119,10 @@ const App = () => {
 
       const result = await response.json();
       console.log('Quiz saved successfully with ID:', result.id);
-      */
     } catch (error) {
       console.error('Error creating quiz document:', error);
     }
+    */
   };
 
   return (
@@ -154,8 +149,6 @@ const App = () => {
         <Route path="/home" element={<HomePage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/quiz/:quizName" element={<QuizPage quizData={quizData} />} />
-        {/* Removed the old create-quiz route */}
-        {/* <Route path="/create-quiz" element={<QuizCreationForm />} /> */}
       </Routes>
     </Router>
   );
