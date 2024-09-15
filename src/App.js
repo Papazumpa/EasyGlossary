@@ -5,11 +5,7 @@ import Quiz from './components/Quiz';
 import HomePage from './pages/HomePage'; 
 import AboutPage from './pages/AboutPage'; 
 import QuizPage from './pages/QuizPage'; 
-<<<<<<< Updated upstream
-import QuizCreationForm from './components/QuizCreationForm';
-=======
 import { db } from './firebase'; // Use db instead of firebase
->>>>>>> Stashed changes
 
 const App = () => {
   const [quizData, setQuizData] = useState([]);
@@ -156,7 +152,8 @@ const App = () => {
         <Route path="/home" element={<HomePage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/quiz/:quizName" element={<QuizPage quizData={quizData} />} />
-        <Route path="/create-quiz" element={<QuizCreationForm />} />
+        {/* Removed the old create-quiz route */}
+        {/* <Route path="/create-quiz" element={<QuizCreationForm />} /> */}
       </Routes>
     </Router>
   );
