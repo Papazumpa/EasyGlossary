@@ -5,7 +5,7 @@ import Quiz from './components/Quiz';
 import HomePage from './pages/HomePage'; 
 import AboutPage from './pages/AboutPage'; 
 import QuizPage from './pages/QuizPage'; 
-import { db } from './firebase'; // Use db instead of firebase
+// import { db } from './firebase'; // Commented out Firebase import
 
 const App = () => {
   const [quizData, setQuizData] = useState([]);
@@ -108,7 +108,8 @@ const App = () => {
     };
 
     try {
-      // Send the quiz data to the serverless API route
+      // Commented out the Firebase-related API call
+      /*
       const response = await fetch('/api/firebaseHandler', {
         method: 'POST',
         headers: {
@@ -123,6 +124,7 @@ const App = () => {
 
       const result = await response.json();
       console.log('Quiz saved successfully with ID:', result.id);
+      */
     } catch (error) {
       console.error('Error creating quiz document:', error);
     }
@@ -149,65 +151,3 @@ const App = () => {
             />
           } 
         />
-        <Route path="/home" element={<HomePage />} />
-        <Route path="/about" element={<AboutPage />} />
-        <Route path="/quiz/:quizName" element={<QuizPage quizData={quizData} />} />
-        {/* Removed the old create-quiz route */}
-        {/* <Route path="/create-quiz" element={<QuizCreationForm />} /> */}
-      </Routes>
-    </Router>
-  );
-};
-
-const UploadPage = ({ 
-  setDetectedText, 
-  callCohereAPI, 
-  detectedText, 
-  loading, 
-  processedText, 
-  quizData, 
-  handleLanguageSelection, 
-  languageOne, 
-  languageTwo, 
-  l1Title, 
-  l2Title 
-}) => (
-  <div>
-    <h1>Image to Quiz</h1>
-    <ImageUpload onTextDetected={(text) => {
-      setDetectedText(text);
-      callCohereAPI(text);
-    }} />
-    <h2>Detected Text</h2>
-    <pre>{detectedText}</pre>
-    {loading ? <p>Loading...</p> : (
-      <>
-        <h2>Processed Text</h2>
-        <pre>{processedText}</pre>
-        {quizData.length > 0 ? (
-          <>
-            <h2>Generated Quiz</h2>
-            <div>
-              <button onClick={() => handleLanguageSelection('Language One')}>
-                Answer in {languageOne}
-              </button>
-              <button onClick={() => handleLanguageSelection('Language Two')}>
-                Answer in {languageTwo}
-              </button>
-            </div>
-
-            <Quiz 
-              phrases={quizData} 
-              languageOne={languageOne} 
-              languageTwo={languageTwo} 
-              l1Title={l1Title} 
-              l2Title={l2Title} 
-            />
-          </>
-        ) : <p>No quiz generated yet.</p>}
-      </>
-    )}
-  </div>
-);
-
-export default App;
