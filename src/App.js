@@ -5,7 +5,11 @@ import Quiz from './components/Quiz';
 import HomePage from './pages/HomePage'; 
 import AboutPage from './pages/AboutPage'; 
 import QuizPage from './pages/QuizPage'; 
+<<<<<<< Updated upstream
 import QuizCreationForm from './components/QuizCreationForm';
+=======
+import { db } from './firebase'; // Use db instead of firebase
+>>>>>>> Stashed changes
 
 const App = () => {
   const [quizData, setQuizData] = useState([]);
