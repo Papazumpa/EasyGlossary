@@ -9,29 +9,31 @@ const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
     const [correctQuestions, setCorrectQuestions] = useState([]);
     const [quizInProgress, setQuizInProgress] = useState(false);
     const [quizName, setQuizName] = useState('');
-    const [message, setMessage] = useState(''); // Define message state
+    const [message, setMessage] = useState('');
 
     useEffect(() => {
         if (answerLanguage) {
-            // Set quiz title based on selected language
             const title = answerLanguage === 1 ? l1Title : l2Title;
             setQuizName(title);
-            
-            // Create quiz document in Firebase
-            // createQuizDocument(title); // Commented out Firebase-related API call
         }
-    }, [answerLanguage]);
+    }, [answerLanguage, l1Title, l2Title]);
+
+    useEffect(() => {
+        if (quizInProgress) {
+            pickRandomQuestion();
+        }
+    }, [quizInProgress]);
 
     // Filter out special terms and any phrases missing translations
     const validPhrases = phrases.filter(pair =>
-        pair.german && pair.swedish && // Ensure both german and swedish properties exist
+        pair.german && pair.swedish &&
         !["language one", "language two", "l1 title", "l2 title"].includes(pair.german.toLowerCase())
     );
 
     // Start the quiz by selecting the first question
     const startQuiz = () => {
         setQuizInProgress(true);
-        pickRandomQuestion();
+        setMessage(''); // Clear any previous message
     };
 
     // Pick a random question and generate options
@@ -39,8 +41,7 @@ const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
         const remainingQuestions = validPhrases.filter(pair => !correctQuestions.includes(pair));
 
         if (remainingQuestions.length === 0) {
-            // No questions left, end quiz
-            endQuiz();
+            endQuiz(); // End the quiz if there are no remaining questions
             return;
         }
 
@@ -104,25 +105,19 @@ const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
                 </div>
             )}
 
-            {quizInProgress ? (
+            {quizInProgress && currentQuestion && (
                 <div>
-                    {currentQuestion ? (
-                        <>
-                            <p>What is the translation of: <strong>{answerLanguage === 1 ? currentQuestion.swedish : currentQuestion.german}</strong>?</p>
+                    <p>What is the translation of: <strong>{answerLanguage === 1 ? currentQuestion.swedish : currentQuestion.german}</strong>?</p>
 
-                            {options.map((option, index) => (
-                                <button key={index} onClick={() => handleAnswer(option)}>
-                                    {option}
-                                </button>
-                            ))}
+                    {options.map((option, index) => (
+                        <button key={index} onClick={() => handleAnswer(option)}>
+                            {option}
+                        </button>
+                    ))}
 
-                            <p>{message}</p>
-                        </>
-                    ) : (
-                        <p>No more questions!</p>
-                    )}
+                    <p>{message}</p>
                 </div>
-            ) : null}
+            )}
 
             {!quizInProgress && correctQuestions.length === validPhrases.length && (
                 <div>
@@ -130,11 +125,4 @@ const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
                     <p>Score: {score}</p>
                     <p>Total Questions: {validPhrases.length}</p>
                     <p>Incorrect Answers: {wrongQuestions.length}</p>
-                    <p>Tries: {score + wrongQuestions.length}</p>
-                </div>
-            )}
-        </div>
-    );
-};
-
-export default Quiz;
+                    <p>Trie
