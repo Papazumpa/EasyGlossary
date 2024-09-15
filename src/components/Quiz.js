@@ -1,5 +1,3 @@
-import React, { useState, useEffect } from 'react';
-
 const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
     const [answerLanguage, setAnswerLanguage] = useState(1); // 1 for language one, 2 for language two
     const [currentQuestion, setCurrentQuestion] = useState(null);
@@ -8,6 +6,7 @@ const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
     const [wrongQuestions, setWrongQuestions] = useState([]);
     const [correctQuestions, setCorrectQuestions] = useState([]);
     const [quizInProgress, setQuizInProgress] = useState(false);
+    const [quizHistory, setQuizHistory] = useState([]);
     const [message, setMessage] = useState('');
     const [quizName, setQuizName] = useState('');
 
@@ -16,11 +15,15 @@ const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
             // Set quiz title based on selected language
             const title = answerLanguage === 1 ? l1Title : l2Title;
             setQuizName(title);
+            
+            // Create quiz document in Firebase
+            // createQuizDocument(title); // Commented out Firebase-related API call
         }
     }, [answerLanguage]);
 
-    // Filter out special terms like "language one", "language two", "l1 title", and "l2 title"
-    const validPhrases = phrases.filter(pair => 
+    // Filter out special terms and any phrases missing translations
+    const validPhrases = phrases.filter(pair =>
+        pair.german && pair.swedish && // Ensure both german and swedish properties exist
         !["language one", "language two", "l1 title", "l2 title"].includes(pair.german.toLowerCase())
     );
 
