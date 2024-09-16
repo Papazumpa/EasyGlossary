@@ -1,4 +1,3 @@
-// /api/uploadToB2.js
 import BackblazeB2 from 'backblaze-b2';
 import busboy from 'busboy';
 
@@ -8,10 +7,10 @@ export const config = {
   },
 };
 
-// Initialize Backblaze B2
+// Initialize Backblaze B2 with the new environment variable names
 const b2 = new BackblazeB2({
-  accountId: process.env.B2_ACCOUNT_ID,
-  applicationKey: process.env.B2_APPLICATION_KEY,
+  applicationKeyId: process.env.BACKBLAZE_APPLICATION_KEY_ID, // Update to new variable
+  applicationKey: process.env.BACKBLAZE_APPLICATION_KEY,     // Update to new variable
 });
 
 const handler = async (req, res) => {
@@ -29,7 +28,7 @@ const handler = async (req, res) => {
 
         // Upload the file directly from the stream
         const uploadResponse = await b2.uploadFile({
-          bucketId: process.env.B2_BUCKET_ID,
+          bucketId: process.env.BACKBLAZE_BUCKET_ID, // Update to new variable
           fileName: filename, // Use the original file name
           data: file, // Directly stream the file to Backblaze
           mime: mimetype, // Pass the MIME type
