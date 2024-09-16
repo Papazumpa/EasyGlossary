@@ -8,30 +8,23 @@ const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
     const [wrongQuestions, setWrongQuestions] = useState([]);
     const [correctQuestions, setCorrectQuestions] = useState([]);
     const [quizInProgress, setQuizInProgress] = useState(false);
-    const [quizHistory, setQuizHistory] = useState([]);
-    const [message, setMessage] = useState('');
     const [quizName, setQuizName] = useState('');
+    const [message, setMessage] = useState('');
 
+    // On answer language change, update quiz name
     useEffect(() => {
         if (answerLanguage) {
-            // Set quiz title based on selected language
             const title = answerLanguage === 1 ? l1Title : l2Title;
             setQuizName(title);
-            
-            // Create quiz document in Firebase (if needed)
-            // createQuizDocument(title); // Uncomment if Firebase is being used
         }
-    }, [answerLanguage]);
+    }, [answerLanguage, l1Title, l2Title]);
 
-    // Filter out special terms like "language one", "language two", "l1 title", and "l2 title"
+    // Filter valid pairs, ensuring both languages exist and filtering out titles/labels
     const validPhrases = phrases.filter(pair => 
-        pair.german && pair.swedish && !["language one", "language two", "l1 title", "l2 title"].includes(pair.german.toLowerCase())
+        pair.languageOne && pair.languageTwo && !["language one", "language two", "l1 title", "l2 title"].includes(pair.languageOne.toLowerCase())
     );
 
-    // Create quiz document in Firebase (if needed)
-    // const createQuizDocument = async (title) => { ... }; // Uncomment if Firebase is being used
-
-    // Start the quiz by selecting the first question
+    // Start the quiz by picking the first question
     const startQuiz = () => {
         setQuizInProgress(true);
         pickRandomQuestion();
@@ -42,7 +35,6 @@ const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
         const remainingQuestions = validPhrases.filter(pair => !correctQuestions.includes(pair));
 
         if (remainingQuestions.length === 0) {
-            // No questions left, end quiz
             endQuiz();
             return;
         }
@@ -50,33 +42,30 @@ const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
         const question = remainingQuestions[Math.floor(Math.random() * remainingQuestions.length)];
         setCurrentQuestion(question);
 
-        // Generate four random answer options (one correct, three random)
+        // Generate four random answer options (one correct, three wrong)
         let otherOptions = remainingQuestions
             .filter(pair => pair !== question)
-            .sort(() => 0.5 - Math.random()) // Randomize
-            .slice(0, 3); // Pick 3 wrong options
+            .sort(() => 0.5 - Math.random()) // Shuffle wrong options
+            .slice(0, 3); // Get 3 wrong options
 
-        // Correct answer depending on selected answer language
-        const correctAnswer = answerLanguage === 1 ? question.german : question.swedish;
+        const correctAnswer = answerLanguage === 1 ? question.languageOne : question.languageTwo;
+        const allOptions = [...otherOptions.map(pair => answerLanguage === 1 ? pair.languageOne : pair.languageTwo), correctAnswer];
 
-        // Add the correct answer to the options and shuffle
-        const allOptions = [...otherOptions.map(pair => answerLanguage === 1 ? pair.german : pair.swedish), correctAnswer];
-        allOptions.sort(() => 0.5 - Math.random());
-
-        setOptions(allOptions); // Set options for the current question
+        // Shuffle all options
+        setOptions(allOptions.sort(() => 0.5 - Math.random()));
     };
 
-    // Handle answering the question
+    // Handle user answer
     const handleAnswer = (answer) => {
-        const correctAnswer = answerLanguage === 1 ? currentQuestion.german : currentQuestion.swedish;
+        const correctAnswer = answerLanguage === 1 ? currentQuestion.languageOne : currentQuestion.languageTwo;
 
         if (answer === correctAnswer) {
             setMessage('Correct!');
             setScore(score + 1);
-            setCorrectQuestions([...correctQuestions, currentQuestion]); // Add question to correctQuestions
+            setCorrectQuestions([...correctQuestions, currentQuestion]); // Add to correct list
         } else {
             setMessage(`Wrong! The correct answer was: ${correctAnswer}`);
-            setWrongQuestions([...wrongQuestions, currentQuestion]); // Add wrong question to the end
+            setWrongQuestions([...wrongQuestions, currentQuestion]); // Add to wrong list
         }
 
         // Move to the next question after a short delay
@@ -86,7 +75,7 @@ const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
         }, 1000);
     };
 
-    // End the quiz and show stats
+    // End the quiz and display stats
     const endQuiz = () => {
         setQuizInProgress(false);
     };
@@ -99,7 +88,7 @@ const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
                 <div>
                     {currentQuestion ? (
                         <>
-                            <p>What is the translation of: <strong>{answerLanguage === 1 ? currentQuestion.swedish : currentQuestion.german}</strong>?</p>
+                            <p>What is the translation of: <strong>{answerLanguage === 1 ? currentQuestion.languageTwo : currentQuestion.languageOne}</strong>?</p>
 
                             {options.map((option, index) => (
                                 <button key={index} onClick={() => handleAnswer(option)}>
