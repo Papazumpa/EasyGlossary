@@ -7,7 +7,7 @@ const generateQuizId = () => {
 
 const QuizFileGenerator = ({ quizTitle, languageOne, languageTwo, quizData, userId }) => {
     
-    const handleUploadQuizFile = async () => {
+    const handleUploadToB2 = async () => {
         // Create quiz metadata object
         const quizFileData = {
             quizId: generateQuizId(),
@@ -20,15 +20,14 @@ const QuizFileGenerator = ({ quizTitle, languageOne, languageTwo, quizData, user
             )
         };
 
-        // Convert quiz metadata to a Blob
+        // Create a downloadable file blob
         const fileData = new Blob([JSON.stringify(quizFileData, null, 2)], { type: 'application/json' });
 
-        // Create FormData and append the file
+        // Use FormData to upload file
         const formData = new FormData();
-        formData.append('file', fileData, `${quizFileData.quizTitle || 'quiz'}_${quizFileData.quizId}.json`);
+        formData.append('file', fileData, `${quizTitle || 'quiz'}_${quizFileData.quizId}.json`);
 
         try {
-            // Upload the file to Backblaze B2 via the serverless function
             const response = await fetch('/api/uploadToB2', {
                 method: 'POST',
                 body: formData,
@@ -36,21 +35,18 @@ const QuizFileGenerator = ({ quizTitle, languageOne, languageTwo, quizData, user
 
             const result = await response.json();
 
-            if (response.ok) {
-                console.log('File uploaded successfully', result);
-                alert('Quiz file uploaded successfully!');
+            if (result.success) {
+                console.log('File uploaded successfully', result.data);
             } else {
-                console.error('File upload failed', result);
-                alert('Failed to upload quiz file');
+                console.error('File upload failed', result.message);
             }
         } catch (error) {
-            console.error('Error uploading file', error);
-            alert('Error uploading quiz file');
+            console.error('Upload error', error);
         }
     };
 
     return (
-        <button onClick={handleUploadQuizFile}>
+        <button onClick={handleUploadToB2}>
             Upload Quiz File
         </button>
     );
