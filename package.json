@@ -8,7 +8,7 @@
     "@vercel/speed-insights": "^1.0.12",
     "axios": "^1.7.7",
     "backblaze-b2": "^1.7.0",
-    "busboy": "^1.6.0",  // <-- Added Busboy
+    "busboy": "^1.6.0",
     "clean": "^4.0.2",
     "cloudinary": "^2.4.0",
     "cohere-ai": "^7.13.1",
