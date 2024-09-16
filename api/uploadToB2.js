@@ -4,10 +4,9 @@ import formidable from 'formidable';
 import fs from 'fs';
 import path from 'path';
 
-// Disable the default body parsing
 export const config = {
   api: {
-    bodyParser: false,
+    bodyParser: false, // Disable the default body parsing
   },
 };
 
@@ -18,36 +17,29 @@ const b2 = new BackblazeB2({
 
 const handler = async (req, res) => {
   if (req.method === 'POST') {
-    const form = new formidable.IncomingForm();
-    form.uploadDir = path.join(process.cwd(), 'temp'); // Temporary directory for uploaded files
-    form.keepExtensions = true;
+    const form = new formidable.IncomingForm({
+      uploadDir: path.join(process.cwd(), '/temp'), // Temporary directory for uploaded files
+      keepExtensions: true,
+    });
 
     form.parse(req, async (err, fields, files) => {
       if (err) {
-        return res.status(500).json({ success: false, message: 'Failed to process form', error: err.message });
+        return res.status(500).json({ success: false, message: 'Failed to process form', error: err });
       }
 
       try {
-        const file = files.file; // Single file upload
-
-        if (!file) {
-          return res.status(400).json({ success: false, message: 'No file uploaded' });
-        }
+        const file = files.file[0]; // Assuming single file upload
 
         await b2.authorize();
 
-        const filePath = file.filepath;
-        const fileName = path.basename(filePath);
-
-        // Upload file to Backblaze B2
         const uploadResponse = await b2.uploadFile({
           bucketId: process.env.B2_BUCKET_ID,
-          fileName: fileName,
-          data: fs.createReadStream(filePath),
+          fileName: path.basename(file.filepath),
+          data: fs.createReadStream(file.filepath),
           mime: file.mimetype,
         });
 
-        fs.unlinkSync(filePath); // Clean up temporary file
+        fs.unlinkSync(file.filepath); // Clean up temporary file
 
         res.status(200).json({
           success: true,
@@ -55,7 +47,7 @@ const handler = async (req, res) => {
           data: uploadResponse.data,
         });
       } catch (error) {
-        res.status(500).json({ success: false, message: 'Failed to upload file', error: error.message });
+        res.status(500).json({ success: false, message: 'Failed to upload file', error });
       }
     });
   } else {
