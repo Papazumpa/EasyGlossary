@@ -23,11 +23,15 @@ const handler = async (req, res) => {
 
     form.parse(req, async (err, fields, files) => {
       if (err) {
-        return res.status(500).json({ success: false, message: 'Failed to process form', error: err });
+        console.error('Form parse error:', err);
+        return res.status(500).json({ success: false, message: 'Failed to process form', error: err.message });
       }
 
       try {
         const file = files.file[0]; // Assuming single file upload
+        if (!file) {
+          throw new Error('No file found in the upload');
+        }
 
         await b2.authorize();
 
@@ -46,7 +50,8 @@ const handler = async (req, res) => {
           data: uploadResponse.data,
         });
       } catch (error) {
-        res.status(500).json({ success: false, message: 'Failed to upload file', error });
+        console.error('Upload error:', error);
+        res.status(500).json({ success: false, message: 'Failed to upload file', error: error.message });
       }
     });
   } else {
