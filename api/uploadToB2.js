@@ -1,14 +1,9 @@
-// /api/uploadToB2.js
+import multer from 'multer';
 import BackblazeB2 from 'backblaze-b2';
-import formidable from 'formidable';
 import fs from 'fs';
 import path from 'path';
 
-export const config = {
-  api: {
-    bodyParser: false, // Disable the default body parsing
-  },
-};
+const upload = multer({ dest: '/temp/' }); // Temporary directory
 
 const b2 = new BackblazeB2({
   accountId: process.env.B2_ACCOUNT_ID,
@@ -17,47 +12,32 @@ const b2 = new BackblazeB2({
 
 const handler = async (req, res) => {
   if (req.method === 'POST') {
-    const form = new formidable.IncomingForm();
-    form.uploadDir = path.join(process.cwd(), '/temp'); // Temporary directory for uploaded files
-    form.keepExtensions = true;
+    try {
+      await b2.authorize();
 
-    form.parse(req, async (err, fields, files) => {
-      if (err) {
-        console.error('Form parse error:', err);
-        return res.status(500).json({ success: false, message: 'Failed to process form', error: err.message });
-      }
+      const file = req.file; // Access the file from multer
 
-      try {
-        const file = files.file[0]; // Assuming single file upload
-        if (!file) {
-          throw new Error('No file found in the upload');
-        }
+      const uploadResponse = await b2.uploadFile({
+        bucketId: process.env.B2_BUCKET_ID,
+        fileName: path.basename(file.path),
+        data: fs.createReadStream(file.path),
+        mime: file.mimetype,
+      });
 
-        await b2.authorize();
+      fs.unlinkSync(file.path); // Clean up temp file
 
-        const uploadResponse = await b2.uploadFile({
-          bucketId: process.env.B2_BUCKET_ID,
-          fileName: path.basename(file.filepath),
-          data: fs.createReadStream(file.filepath),
-          mime: file.mimetype,
-        });
-
-        fs.unlinkSync(file.filepath); // Clean up temporary file
-
-        res.status(200).json({
-          success: true,
-          message: 'File uploaded successfully',
-          data: uploadResponse.data,
-        });
-      } catch (error) {
-        console.error('Upload error:', error);
-        res.status(500).json({ success: false, message: 'Failed to upload file', error: error.message });
-      }
-    });
+      res.status(200).json({
+        success: true,
+        message: 'File uploaded successfully',
+        data: uploadResponse.data,
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, message: 'Failed to upload file', error });
+    }
   } else {
     res.setHeader('Allow', ['POST']);
     res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 };
 
-export default handler;
+export default upload.single('file')(handler); // Specify 'file' as the key for file upload
