@@ -4,7 +4,7 @@ import ImageUpload from './components/ImageUpload';
 import Quiz from './components/Quiz'; 
 import HomePage from './pages/HomePage'; 
 import AboutPage from './pages/AboutPage'; 
-import QuizPage from './pages/QuizPage'; 
+import QuizPage from './pages/QuizPage';
 
 const App = () => {
     const [quizData, setQuizData] = useState([]);
