@@ -19,18 +19,13 @@ const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
         }
     }, [answerLanguage, l1Title, l2Title]);
 
-    // Filter valid pairs, ensuring both languages exist and filtering out titles/labels
-    const validPhrases = phrases.filter(pair => 
-        pair.languageOne && pair.languageTwo && !["language one", "language two", "l1 title", "l2 title"].includes(pair.languageOne.toLowerCase())
-    );
+    const validPhrases = phrases.filter(pair => pair.phraseOne && pair.phraseTwo);
 
-    // Start the quiz by picking the first question
     const startQuiz = () => {
         setQuizInProgress(true);
         pickRandomQuestion();
     };
 
-    // Pick a random question and generate options
     const pickRandomQuestion = () => {
         const remainingQuestions = validPhrases.filter(pair => !correctQuestions.includes(pair));
 
@@ -42,40 +37,35 @@ const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
         const question = remainingQuestions[Math.floor(Math.random() * remainingQuestions.length)];
         setCurrentQuestion(question);
 
-        // Generate four random answer options (one correct, three wrong)
         let otherOptions = remainingQuestions
             .filter(pair => pair !== question)
-            .sort(() => 0.5 - Math.random()) // Shuffle wrong options
-            .slice(0, 3); // Get 3 wrong options
+            .sort(() => 0.5 - Math.random())
+            .slice(0, 3);
 
-        const correctAnswer = answerLanguage === 1 ? question.languageOne : question.languageTwo;
-        const allOptions = [...otherOptions.map(pair => answerLanguage === 1 ? pair.languageOne : pair.languageTwo), correctAnswer];
+        const correctAnswer = answerLanguage === 1 ? question.phraseOne : question.phraseTwo;
+        const allOptions = [...otherOptions.map(pair => answerLanguage === 1 ? pair.phraseOne : pair.phraseTwo), correctAnswer];
 
-        // Shuffle all options
         setOptions(allOptions.sort(() => 0.5 - Math.random()));
     };
 
-    // Handle user answer
     const handleAnswer = (answer) => {
-        const correctAnswer = answerLanguage === 1 ? currentQuestion.languageOne : currentQuestion.languageTwo;
+        const correctAnswer = answerLanguage === 1 ? currentQuestion.phraseOne : currentQuestion.phraseTwo;
 
         if (answer === correctAnswer) {
             setMessage('Correct!');
             setScore(score + 1);
-            setCorrectQuestions([...correctQuestions, currentQuestion]); // Add to correct list
+            setCorrectQuestions([...correctQuestions, currentQuestion]);
         } else {
             setMessage(`Wrong! The correct answer was: ${correctAnswer}`);
-            setWrongQuestions([...wrongQuestions, currentQuestion]); // Add to wrong list
+            setWrongQuestions([...wrongQuestions, currentQuestion]);
         }
 
-        // Move to the next question after a short delay
         setTimeout(() => {
             setMessage('');
             pickRandomQuestion();
         }, 1000);
     };
 
-    // End the quiz and display stats
     const endQuiz = () => {
         setQuizInProgress(false);
     };
@@ -88,7 +78,7 @@ const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
                 <div>
                     {currentQuestion ? (
                         <>
-                            <p>What is the translation of: <strong>{answerLanguage === 1 ? currentQuestion.languageTwo : currentQuestion.languageOne}</strong>?</p>
+                            <p>What is the translation of: <strong>{answerLanguage === 1 ? currentQuestion.phraseTwo : currentQuestion.phraseOne}</strong>?</p>
 
                             {options.map((option, index) => (
                                 <button key={index} onClick={() => handleAnswer(option)}>
@@ -114,15 +104,7 @@ const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
                 </div>
             )}
 
-            {!quizInProgress && correctQuestions.length === validPhrases.length && (
-                <div>
-                    <h2>Quiz Complete!</h2>
-                    <p>Score: {score}</p>
-                    <p>Total Questions: {validPhrases.length}</p>
-                    <p>Incorrect Answers: {wrongQuestions.length}</p>
-                    <p>Tries: {score + wrongQuestions.length}</p>
-                </div>
-            )}
+            {!quizInProgress && correctQuestions.length === validPhrases.length && <p>You completed the quiz! Score: {score}/{validPhrases.length}</p>}
         </div>
     );
 };
