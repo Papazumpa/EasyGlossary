@@ -17,10 +17,9 @@ const b2 = new BackblazeB2({
 
 const handler = async (req, res) => {
   if (req.method === 'POST') {
-    const form = new formidable.IncomingForm({
-      uploadDir: path.join(process.cwd(), '/temp'), // Temporary directory for uploaded files
-      keepExtensions: true,
-    });
+    const form = new formidable.IncomingForm();
+    form.uploadDir = path.join(process.cwd(), '/temp'); // Temporary directory for uploaded files
+    form.keepExtensions = true;
 
     form.parse(req, async (err, fields, files) => {
       if (err) {
