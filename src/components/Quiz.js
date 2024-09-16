@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import QuizFileGenerator from './QuizFileGenerator'; // Import the new component
 
-const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
-    const [answerLanguage, setAnswerLanguage] = useState(1); // 1 for language one, 2 for language two
+const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title, userId }) => {
+    const [answerLanguage, setAnswerLanguage] = useState(1);
     const [currentQuestion, setCurrentQuestion] = useState(null);
     const [options, setOptions] = useState([]);
     const [score, setScore] = useState(0);
@@ -11,7 +12,6 @@ const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
     const [quizName, setQuizName] = useState('');
     const [message, setMessage] = useState('');
 
-    // On answer language change, update quiz name
     useEffect(() => {
         if (answerLanguage) {
             const title = answerLanguage === 1 ? l1Title : l2Title;
@@ -44,7 +44,6 @@ const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
 
         const correctAnswer = answerLanguage === 1 ? question.phraseOne : question.phraseTwo;
         const allOptions = [...otherOptions.map(pair => answerLanguage === 1 ? pair.phraseOne : pair.phraseTwo), correctAnswer];
-
         setOptions(allOptions.sort(() => 0.5 - Math.random()));
     };
 
@@ -73,24 +72,19 @@ const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
     return (
         <div>
             <h1>{quizName}</h1>
-
             {quizInProgress ? (
                 <div>
                     {currentQuestion ? (
                         <>
-                            <p>What is the translation of: <strong>{answerLanguage === 1 ? currentQuestion.phraseTwo : currentQuestion.phraseOne}</strong>?</p>
-
+                            <p>Translate: <strong>{answerLanguage === 1 ? currentQuestion.phraseTwo : currentQuestion.phraseOne}</strong></p>
                             {options.map((option, index) => (
                                 <button key={index} onClick={() => handleAnswer(option)}>
                                     {option}
                                 </button>
                             ))}
-
                             <p>{message}</p>
                         </>
-                    ) : (
-                        <p>No more questions!</p>
-                    )}
+                    ) : <p>No more questions!</p>}
                 </div>
             ) : (
                 <div>
@@ -101,10 +95,26 @@ const Quiz = ({ phrases, languageOne, languageTwo, l1Title, l2Title }) => {
                     </select>
 
                     <button onClick={startQuiz}>Start Quiz</button>
+
+                    <QuizFileGenerator 
+                        quizTitle={quizName} 
+                        languageOne={languageOne} 
+                        languageTwo={languageTwo} 
+                        quizData={validPhrases} 
+                        userId={userId}
+                    />
                 </div>
             )}
 
-            {!quizInProgress && correctQuestions.length === validPhrases.length && <p>You completed the quiz! Score: {score}/{validPhrases.length}</p>}
+            {!quizInProgress && correctQuestions.length === validPhrases.length && (
+                <div>
+                    <h2>Quiz Complete!</h2>
+                    <p>Score: {score}</p>
+                    <p>Total Questions: {validPhrases.length}</p>
+                    <p>Incorrect Answers: {wrongQuestions.length}</p>
+                    <p>Tries: {score + wrongQuestions.length}</p>
+                </div>
+            )}
         </div>
     );
 };
