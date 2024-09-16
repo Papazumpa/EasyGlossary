@@ -7,7 +7,7 @@ const generateQuizId = () => {
 
 const QuizFileGenerator = ({ quizTitle, languageOne, languageTwo, quizData, userId }) => {
     
-    const handleDownloadQuizFile = () => {
+    const handleUploadQuizFile = async () => {
         // Create quiz metadata object
         const quizFileData = {
             quizId: generateQuizId(),
@@ -20,19 +20,38 @@ const QuizFileGenerator = ({ quizTitle, languageOne, languageTwo, quizData, user
             )
         };
 
-        // Create a downloadable file
+        // Convert quiz metadata to a Blob
         const fileData = new Blob([JSON.stringify(quizFileData, null, 2)], { type: 'application/json' });
-        const downloadLink = document.createElement('a');
-        downloadLink.href = URL.createObjectURL(fileData);
-        downloadLink.download = `${quizTitle || 'quiz'}_${quizFileData.quizId}.json`;
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
+
+        // Create FormData and append the file
+        const formData = new FormData();
+        formData.append('file', fileData, `${quizFileData.quizTitle || 'quiz'}_${quizFileData.quizId}.json`);
+
+        try {
+            // Upload the file to Backblaze B2 via the serverless function
+            const response = await fetch('/api/uploadToB2', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                console.log('File uploaded successfully', result);
+                alert('Quiz file uploaded successfully!');
+            } else {
+                console.error('File upload failed', result);
+                alert('Failed to upload quiz file');
+            }
+        } catch (error) {
+            console.error('Error uploading file', error);
+            alert('Error uploading quiz file');
+        }
     };
 
     return (
-        <button onClick={handleDownloadQuizFile}>
-            Download Quiz File
+        <button onClick={handleUploadQuizFile}>
+            Upload Quiz File
         </button>
     );
 };
