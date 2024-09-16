@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'; // Import Router components
-import ImageUpload from './components/ImageUpload';  // Image upload component
-import Quiz from './components/Quiz';  // Quiz component
-import HomePage from './pages/HomePage';  // Home page
-import AboutPage from './pages/AboutPage';  // About page
-import QuizPage from './pages/QuizPage';  // Quiz page for individual quizzes
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'; 
+import ImageUpload from './components/ImageUpload'; 
+import Quiz from './components/Quiz'; 
+import HomePage from './pages/HomePage'; 
+import AboutPage from './pages/AboutPage'; 
+import QuizPage from './pages/QuizPage'; 
 
 const App = () => {
     const [quizData, setQuizData] = useState([]);
@@ -25,14 +25,8 @@ const App = () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    ocrOutput: ocrOutput,
-                }),
+                body: JSON.stringify({ ocrOutput })
             });
-
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
 
             const data = await response.json();
             const correctedText = data.result;
@@ -48,7 +42,6 @@ const App = () => {
 
     const processText = (text) => {
         const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
-
         const specialLines = {
             languageOne: '',
             languageTwo: '',
@@ -79,13 +72,13 @@ const App = () => {
             if (!phraseTwo) {
                 const userResponse = window.prompt(`The corresponding phrase for "${phraseOne}" is missing. Enter one or leave empty to remove this line:`);
                 if (userResponse) {
-                    return { german: phraseOne, swedish: userResponse.trim() };
+                    return { phraseOne, phraseTwo: userResponse.trim() };
                 } else {
                     return null;
                 }
             }
 
-            return { german: phraseOne, swedish: phraseTwo };
+            return { phraseOne, phraseTwo };
         }).filter(Boolean);
 
         setLanguageOne(specialLines.languageOne);
@@ -98,7 +91,21 @@ const App = () => {
     return (
         <Router>
             <Routes>
-                <Route path="/" element={<UploadPage setDetectedText={setDetectedText} callCohereAPI={callCohereAPI} detectedText={detectedText} loading={loading} processedText={processedText} quizData={quizData} />} />
+                <Route 
+                    path="/" 
+                    element={<UploadPage 
+                        setDetectedText={setDetectedText} 
+                        callCohereAPI={callCohereAPI} 
+                        detectedText={detectedText} 
+                        loading={loading} 
+                        processedText={processedText} 
+                        quizData={quizData} 
+                        languageOne={languageOne}
+                        languageTwo={languageTwo}
+                        l1Title={l1Title}
+                        l2Title={l2Title}
+                    />} 
+                />
                 <Route path="/home" element={<HomePage />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/quiz/:quizName" element={<QuizPage quizData={quizData} />} />
@@ -107,7 +114,7 @@ const App = () => {
     );
 };
 
-const UploadPage = ({ setDetectedText, callCohereAPI, detectedText, loading, processedText, quizData }) => (
+const UploadPage = ({ setDetectedText, callCohereAPI, detectedText, loading, processedText, quizData, languageOne, languageTwo, l1Title, l2Title }) => (
     <div>
         <h1>Image to Quiz</h1>
         <ImageUpload onTextDetected={(text) => {
@@ -123,7 +130,13 @@ const UploadPage = ({ setDetectedText, callCohereAPI, detectedText, loading, pro
                 {quizData.length > 0 ? (
                     <>
                         <h2>Generated Quiz</h2>
-                        <Quiz phrases={quizData} />
+                        <Quiz 
+                            phrases={quizData} 
+                            languageOne={languageOne} 
+                            languageTwo={languageTwo} 
+                            l1Title={l1Title} 
+                            l2Title={l2Title} 
+                        />
                     </>
                 ) : <p>No quiz generated yet.</p>}
             </>
