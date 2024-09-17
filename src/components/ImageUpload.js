@@ -8,111 +8,83 @@ const ImageUpload = ({ onTextDetected }) => {
     const [image, setImage] = useState(null);
     const [loading, setLoading] = useState(false);
 
-    const processImage = async (file) => {
-        setLoading(true);
-
-        try {
-            // Step 1: Resize and convert image to grayscale with dynamic compression
-            const processedFile = await resizeAndGrayscaleImage(file, 1024); // 1024 KB limit
-
-            // Step 2: Convert processed image to base64
-            const base64Image = await convertToBase64(processedFile);
-
-            // Step 3: Upload image to Cloudinary via your Vercel serverless API
-            const uploadResponse = await fetch(CLOUDINARY_UPLOAD_URL, {
+    // Function to handle Cloudinary upload and size check
+    const uploadToCloudinaryWithSizeCheck = async (base64Image, retries = 5) => {
+        let uploadResult;
+        for (let attempt = 0; attempt < retries; attempt++) {
+            const response = await fetch(CLOUDINARY_UPLOAD_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ image: base64Image })
             });
 
-            const uploadResult = await uploadResponse.json();
+            uploadResult = await response.json();
             console.log('Cloudinary upload result:', uploadResult);
 
-            if (uploadResult.secure_url) {
-                // Step 4: Send Cloudinary URL to OCR.Space
-                const ocrFormData = new FormData();
-                ocrFormData.append('apikey', 'K84884375988957'); // Replace with your actual API key
-                ocrFormData.append('url', uploadResult.secure_url); // Use image URL instead of file
-
-                const ocrResponse = await fetch(OCR_SPACE_API_URL, {
-                    method: 'POST',
-                    body: ocrFormData,
-                });
-
-                const ocrResult = await ocrResponse.json();
-                console.log('OCR result:', ocrResult);
-
-                if (ocrResult.ParsedResults && ocrResult.ParsedResults.length > 0) {
-                    const detectedText = ocrResult.ParsedResults[0].ParsedText || '';
-                    onTextDetected(detectedText);
-                } else {
-                    console.error('No text detected');
-                }
-            } else {
-                console.error('Image upload failed');
+            if (uploadResult.secure_url && uploadResult.size <= 1024 * 1024) {
+                return uploadResult.secure_url; // Image size is within the limit
             }
-        } catch (error) {
-            console.error('Error during image processing:', error);
-        } finally {
-            setLoading(false);
+
+            if (attempt === retries - 1) {
+                throw new Error('Image size exceeded limit after multiple attempts.');
+            }
+
+            // Resize and compress the image for the next attempt
+            base64Image = await resizeAndGrayscaleImage(base64Image, 1024); // Adjust the resize as needed
         }
     };
 
-    const resizeAndGrayscaleImage = (file, maxSizeKB) => {
+    // Function to resize and grayscale image
+    const resizeAndGrayscaleImage = (base64Image, maxSizeKB) => {
         return new Promise((resolve) => {
             const img = new Image();
-            const reader = new FileReader();
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
 
-            reader.onload = (e) => {
-                img.src = e.target.result;
+            img.onload = () => {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
+                // Convert to grayscale
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imageData.data;
 
-                    canvas.width = img.width;
-                    canvas.height = img.height;
+                for (let i = 0; i < data.length; i += 4) {
+                    const red = data[i];
+                    const green = data[i + 1];
+                    const blue = data[i + 2];
+                    const grayscale = 0.299 * red + 0.587 * green + 0.114 * blue;
 
-                    // Draw image to the canvas
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    data[i] = data[i + 1] = data[i + 2] = grayscale; // Set the RGB to grayscale value
+                }
 
-                    // Convert to grayscale
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const data = imageData.data;
+                ctx.putImageData(imageData, 0, 0);
 
-                    for (let i = 0; i < data.length; i += 4) {
-                        const red = data[i];
-                        const green = data[i + 1];
-                        const blue = data[i + 2];
-                        const grayscale = 0.299 * red + 0.587 * green + 0.114 * blue;
-
-                        data[i] = data[i + 1] = data[i + 2] = grayscale; // Set the RGB to grayscale value
-                    }
-
-                    ctx.putImageData(imageData, 0, 0);
-
-                    // Start compression loop to ensure file size is under maxSizeKB
-                    let quality = 1.0;
-                    const compressImage = () => {
-                        return new Promise((resolveCompress) => {
-                            canvas.toBlob((blob) => {
-                                if (blob.size / 1024 > maxSizeKB && quality > 0.1) {
-                                    // If file is too large, reduce quality and try again
-                                    quality -= 0.1;
-                                    compressImage().then(resolveCompress);
-                                } else {
-                                    resolveCompress(blob); // Return compressed blob
-                                }
-                            }, file.type, quality); // Compress with current quality
-                        });
-                    };
-
-                    compressImage().then((blob) => {
-                        resolve(new File([blob], file.name, { type: file.type }));
+                // Compress image to ensure file size is under maxSizeKB
+                let quality = 1.0;
+                const compressImage = () => {
+                    return new Promise((resolveCompress) => {
+                        canvas.toBlob((blob) => {
+                            if (blob.size / 1024 > maxSizeKB && quality > 0.1) {
+                                // If file is too large, reduce quality and try again
+                                quality -= 0.1;
+                                compressImage().then(resolveCompress);
+                            } else {
+                                resolveCompress(blob); // Return compressed blob
+                            }
+                        }, 'image/jpeg', quality); // Compress with current quality
                     });
                 };
+
+                compressImage().then((blob) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.readAsDataURL(blob);
+                });
             };
-            reader.readAsDataURL(file);
+
+            img.src = base64Image;
         });
     };
 
@@ -123,6 +95,42 @@ const ImageUpload = ({ onTextDetected }) => {
             reader.onerror = reject;
             reader.readAsDataURL(file);
         });
+    };
+
+    const processImage = async (file) => {
+        setLoading(true);
+
+        try {
+            // Convert image to base64
+            const base64Image = await convertToBase64(file);
+
+            // Upload to Cloudinary with size check
+            const cloudinaryUrl = await uploadToCloudinaryWithSizeCheck(base64Image);
+
+            // Send Cloudinary URL to OCR.Space
+            const ocrFormData = new FormData();
+            ocrFormData.append('apikey', 'K84884375988957'); // Replace with your actual API key
+            ocrFormData.append('url', cloudinaryUrl); // Use image URL instead of file
+
+            const ocrResponse = await fetch(OCR_SPACE_API_URL, {
+                method: 'POST',
+                body: ocrFormData,
+            });
+
+            const ocrResult = await ocrResponse.json();
+            console.log('OCR result:', ocrResult);
+
+            if (ocrResult.ParsedResults && ocrResult.ParsedResults.length > 0) {
+                const detectedText = ocrResult.ParsedResults[0].ParsedText || '';
+                onTextDetected(detectedText);
+            } else {
+                console.error('No text detected');
+            }
+        } catch (error) {
+            console.error('Error during image processing:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleFileChange = async (e) => {
