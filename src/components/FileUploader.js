@@ -8,9 +8,10 @@ const ImageUpload = ({ onTextDetected, onJsonData }) => {
     const [image, setImage] = useState(null);
     const [loading, setLoading] = useState(false);
 
-
     const uploadToCloudinaryWithSizeCheck = async (base64Image, retries = 5) => {
         let uploadResult;
+        const maxFileSizeInBytes = 1048576; // 1MB in bytes (1,048,576 bytes)
+    
         for (let attempt = 0; attempt < retries; attempt++) {
             const response = await fetch(CLOUDINARY_UPLOAD_URL, {
                 method: 'POST',
@@ -21,8 +22,8 @@ const ImageUpload = ({ onTextDetected, onJsonData }) => {
             uploadResult = await response.json();
             console.log('Cloudinary upload result:', uploadResult);
 
-            // Check the `bytes` field for the file size (1MB = 1.024e+6 bytes)
-            if (uploadResult.secure_url && uploadResult.bytes <= 1.024e+6) {
+            // Check the `bytes` field for the file size (1MB = 1,048,576 bytes)
+            if (uploadResult.secure_url && uploadResult.bytes <= maxFileSizeInBytes) {
                 console.log(`Image size is within limit: ${uploadResult.bytes} bytes.`);
                 return uploadResult.secure_url; // Image size is within the limit
             }
@@ -32,7 +33,7 @@ const ImageUpload = ({ onTextDetected, onJsonData }) => {
             }
 
             // Resize and compress the image for the next attempt
-            console.log('Resizing image and retrying...');
+            console.log(`Resizing image (${uploadResult.bytes} bytes) and retrying...`);
             base64Image = await resizeAndGrayscaleImage(base64Image, 1024); // Update the base64 image with resized one
         }
     };
