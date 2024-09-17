@@ -8,6 +8,7 @@ const ImageUpload = ({ onTextDetected, onJsonData }) => {
     const [image, setImage] = useState(null);
     const [loading, setLoading] = useState(false);
 
+
     const uploadToCloudinaryWithSizeCheck = async (base64Image, retries = 5) => {
         let uploadResult;
         for (let attempt = 0; attempt < retries; attempt++) {
@@ -20,8 +21,9 @@ const ImageUpload = ({ onTextDetected, onJsonData }) => {
             uploadResult = await response.json();
             console.log('Cloudinary upload result:', uploadResult);
 
-            // Check if the image size is within the limit
-            if (uploadResult.secure_url && uploadResult.size <= 1.024e+6) {
+            // Check the `bytes` field for the file size (1MB = 1.024e+6 bytes)
+            if (uploadResult.secure_url && uploadResult.bytes <= 1.024e+6) {
+                console.log(`Image size is within limit: ${uploadResult.bytes} bytes.`);
                 return uploadResult.secure_url; // Image size is within the limit
             }
 
