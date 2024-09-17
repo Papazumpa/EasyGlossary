@@ -15,71 +15,51 @@ const b2 = new BackblazeB2({
 
 const handler = async (req, res) => {
   if (req.method === 'POST') {
-    // Initialize busboy instance
     const bb = busboy({ headers: req.headers });
 
+    // Variables to hold the file info
     let uploadError = null;
-    let fileBuffer = [];
-    let fileName = '';
-    let mimeType = '';
+    let fileMimeType = null;
+    let fileName = null;
 
     // When a file is received
-    bb.on('file', (fieldname, file, filename, encoding, mimetype) => {
-      console.log(`Field name: ${fieldname}`);
-      console.log('File object: ', file);
-      console.log('Filename object: ', filename);
-      console.log('MIME type:', mimetype);
+    bb.on('file', async (fieldname, file, info) => {
+      const { filename, encoding, mimeType } = info;
 
-      // Extract the filename and MIME type from the object
-      fileName = filename.filename || 'default-filename'; // Extract the actual filename
-      mimeType = filename.mimeType || 'application/octet-stream'; // Extract MIME type
+      // Store the MIME type and filename
+      fileMimeType = mimeType; // Ensure this captures the mimetype
+      fileName = filename;
 
-      // Collect the file stream chunks
-      file.on('data', (data) => {
-        fileBuffer.push(data);
-      });
+      console.log(`Received file: ${filename} with MIME type: ${mimeType}`);
 
-      // When the file stream ends
-      file.on('end', () => {
-        fileBuffer = Buffer.concat(fileBuffer); // Combine the chunks into a single buffer
-      });
-    });
-
-    // When busboy finishes processing
-    bb.on('finish', async () => {
       try {
-        if (typeof fileName !== 'string' || fileName.trim() === '') {
-          throw new Error('Invalid file name');
-        }
-
         // Authorize with Backblaze B2
         await b2.authorize();
 
-        // Upload the file using the buffer
+        // Upload the file directly from the stream
         const uploadResponse = await b2.uploadFile({
           bucketId: process.env.B2_BUCKET_ID,
-          fileName: fileName,
-          data: fileBuffer, // Use the file buffer
-          mime: mimeType,
+          fileName: filename, // Use the original file name
+          data: file, // Directly stream the file to Backblaze
+          mime: fileMimeType, // Pass the MIME type
         });
 
-        // Return the upload response after successful upload
         res.status(200).json({
           success: true,
           message: 'File uploaded successfully',
           data: uploadResponse.data,
         });
       } catch (error) {
+        uploadError = error;
         console.error('Upload failed: ', error);
         res.status(500).json({
           success: false,
           message: 'Failed to upload file',
-          error: error.message,
+          error,
         });
       }
     });
 
-    // If there's an error with parsing
     bb.on('error', (err) => {
       uploadError = err;
       res.status(500).json({
@@ -89,7 +69,6 @@ const handler = async (req, res) => {
       });
     });
 
-    // Pipe the request stream into busboy for processing
     req.pipe(bb);
   } else {
     res.setHeader('Allow', ['POST']);
