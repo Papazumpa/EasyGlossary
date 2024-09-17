@@ -9,7 +9,7 @@ export const config = {
 
 // Initialize Backblaze B2
 const b2 = new BackblazeB2({
-  accountId: process.env.B2_ACCOUNT_ID,
+  accountId: process.env.B2_ACCOUNT_ID, // Ensure these env variables are correct
   applicationKey: process.env.B2_APPLICATION_KEY,
 });
 
@@ -19,23 +19,20 @@ const handler = async (req, res) => {
     const bb = busboy({ headers: req.headers });
 
     let uploadError = null;
-
-    // Store the file buffer
     let fileBuffer = [];
     let fileName = '';
     let mimeType = '';
 
     // When a file is received
     bb.on('file', (fieldname, file, filename, encoding, mimetype) => {
-      // Log what `filename` and `mimetype` look like
       console.log(`Field name: ${fieldname}`);
       console.log('File object: ', file);
       console.log('Filename object: ', filename);
       console.log('MIME type:', mimetype);
 
-      // Capture the filename and mimetype properly
-      fileName = filename ? filename.toString() : 'default-filename';
-      mimeType = mimetype || 'application/octet-stream'; // Default MIME type if not provided
+      // Extract the filename and MIME type from the object
+      fileName = filename.filename || 'default-filename'; // Extract the actual filename
+      mimeType = filename.mimeType || 'application/octet-stream'; // Extract MIME type
 
       // Collect the file stream chunks
       file.on('data', (data) => {
@@ -51,7 +48,6 @@ const handler = async (req, res) => {
     // When busboy finishes processing
     bb.on('finish', async () => {
       try {
-        // Check if fileName is a valid string
         if (typeof fileName !== 'string' || fileName.trim() === '') {
           throw new Error('Invalid file name');
         }
@@ -62,9 +58,9 @@ const handler = async (req, res) => {
         // Upload the file using the buffer
         const uploadResponse = await b2.uploadFile({
           bucketId: process.env.B2_BUCKET_ID,
-          fileName: fileName, // Use the original file name
+          fileName: fileName,
           data: fileBuffer, // Use the file buffer
-          mime: mimeType, // Pass the MIME type
+          mime: mimeType,
         });
 
         // Return the upload response after successful upload
@@ -78,7 +74,7 @@ const handler = async (req, res) => {
         res.status(500).json({
           success: false,
           message: 'Failed to upload file',
-          error: error.message, // Provide a detailed error message
+          error: error.message,
         });
       }
     });
@@ -96,7 +92,6 @@ const handler = async (req, res) => {
     // Pipe the request stream into busboy for processing
     req.pipe(bb);
   } else {
-    // Method not allowed
     res.setHeader('Allow', ['POST']);
     res.status(405).end(`Method ${req.method} Not Allowed`);
   }
