@@ -7,7 +7,6 @@ const OCR_SPACE_API_URL = 'https://api.ocr.space/parse/image'; // OCR.Space API 
 const ImageUpload = ({ onTextDetected }) => {
     const [image, setImage] = useState(null);
     const [loading, setLoading] = useState(false);
-    const [jsonContent, setJsonContent] = useState(null);
 
     const processImage = async (file) => {
         setLoading(true);
@@ -59,45 +58,106 @@ const ImageUpload = ({ onTextDetected }) => {
         }
     };
 
-    const handleJsonUpload = async (file) => {
-        try {
-            const text = await file.text(); // Read file content as text
-            const json = JSON.parse(text); // Parse JSON
+    const resizeAndGrayscaleImage = (file, maxSizeKB) => {
+        return new Promise((resolve) => {
+            const img = new Image();
+            const reader = new FileReader();
 
-            // Handle JSON content
-            setJsonContent(json);
-            console.log('JSON file content:', json);
-        } catch (error) {
-            console.error('Error processing JSON file:', error);
+            reader.onload = (e) => {
+                img.src = e.target.result;
+
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+
+                    // Draw image to the canvas
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                    // Convert to grayscale
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const data = imageData.data;
+
+                    for (let i = 0; i < data.length; i += 4) {
+                        const red = data[i];
+                        const green = data[i + 1];
+                        const blue = data[i + 2];
+                        const grayscale = 0.299 * red + 0.587 * green + 0.114 * blue;
+
+                        data[i] = data[i + 1] = data[i + 2] = grayscale; // Set the RGB to grayscale value
+                    }
+
+                    ctx.putImageData(imageData, 0, 0);
+
+                    // Start compression loop to ensure file size is under maxSizeKB
+                    let quality = 1.0;
+                    const compressImage = () => {
+                        return new Promise((resolveCompress) => {
+                            canvas.toBlob((blob) => {
+                                if (blob.size / 1024 > maxSizeKB && quality > 0.1) {
+                                    // If file is too large, reduce quality and try again
+                                    quality -= 0.1;
+                                    compressImage().then(resolveCompress);
+                                } else {
+                                    resolveCompress(blob); // Return compressed blob
+                                }
+                            }, file.type, quality); // Compress with current quality
+                        });
+                    };
+
+                    compressImage().then((blob) => {
+                        resolve(new File([blob], file.name, { type: file.type }));
+                    });
+                };
+            };
+            reader.readAsDataURL(file);
+        });
+    };
+
+    const convertToBase64 = (file) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    };
+
+    const handleImageChange = async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setImage(URL.createObjectURL(file));
+            await processImage(file);
         }
     };
 
-    const handleFileChange = async (e) => {
+    const handleJsonChange = async (e) => {
         const file = e.target.files[0];
-        if (file) {
-            const fileType = file.type;
-
-            if (fileType === 'application/json') {
-                // Handle JSON file
-                await handleJsonUpload(file);
-            } else if (fileType.startsWith('image/')) {
-                // Handle image file
-                setImage(URL.createObjectURL(file));
-                await processImage(file);
-            } else {
-                console.error('Unsupported file type');
-            }
+        if (file && file.type === 'application/json') {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const jsonData = JSON.parse(event.target.result);
+                    // Handle the JSON data as needed
+                    console.log('JSON data:', jsonData);
+                } catch (error) {
+                    console.error('Error parsing JSON:', error);
+                }
+            };
+            reader.readAsText(file);
+        } else {
+            console.error('Please upload a valid JSON file.');
         }
     };
 
     return (
         <div>
-            <input type="file" onChange={handleFileChange} accept="image/*,application/json" />
+            <input type="file" onChange={handleImageChange} accept="image/*" />
+            <input type="file" onChange={handleJsonChange} accept="application/json" />
             {image && <img src={image} alt="Selected" />}
             {loading && <p>Processing...</p>}
-            {jsonContent && (
-                <pre>{JSON.stringify(jsonContent, null, 2)}</pre> // Display JSON content for verification
-            )}
         </div>
     );
 };
