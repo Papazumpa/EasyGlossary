@@ -1,4 +1,4 @@
-const Busboy = require('busboy');  // Import Busboy for file uploads
+const Busboy = require('busboy');  // Import Busboy
 const B2 = require('backblaze-b2');  // Import Backblaze B2 library
 
 // Initialize B2 client
@@ -7,9 +7,9 @@ const b2 = new B2({
   applicationKey: process.env.B2_APPLICATION_KEY,  // Replace with your env variable
 });
 
-module.exports = async (req, res) => {  // Changed to module.exports
+module.exports = async (req, res) => {
   if (req.method === 'POST') {
-    const bb = new Busboy({ headers: req.headers });
+    const bb = Busboy({ headers: req.headers });  // Correct way to initialize Busboy
 
     bb.on('file', async (fieldname, file, filename, encoding, mimetype) => {
       try {
@@ -53,7 +53,7 @@ module.exports = async (req, res) => {  // Changed to module.exports
       });
     });
 
-    req.pipe(bb);  // Pipe the request to busboy
+    req.pipe(bb);  // Pipe the request to Busboy
   } else {
     res.status(405).json({
       success: false,
