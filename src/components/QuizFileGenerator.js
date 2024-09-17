@@ -1,55 +1,63 @@
-import React from 'react';
+const Busboy = require('busboy');  // Import Busboy
+const B2 = require('backblaze-b2');  // Import Backblaze B2 library
 
-// Utility function to generate a random ID
-const generateQuizId = () => {
-    return `quiz_${Math.random().toString(36).substr(2, 9)}`;
+// Initialize B2 client
+const b2 = new B2({
+  applicationKeyId: process.env.B2_APPLICATION_KEY_ID,  // Replace with your env variable
+  applicationKey: process.env.B2_APPLICATION_KEY,  // Replace with your env variable
+});
+
+module.exports = async (req, res) => {
+  if (req.method === 'POST') {
+    const bb = Busboy({ headers: req.headers });  // Correct way to initialize Busboy
+
+    bb.on('file', async (fieldname, file, filename, encoding, mimetype) => {
+      try {
+        console.log('Received file:', filename, 'with MIME type:', mimetype);
+
+        await b2.authorize();  // Authorize B2 client
+        const buffer = [];
+
+        // Collect file stream
+        file.on('data', (data) => {
+          buffer.push(data);
+        });
+
+        file.on('end', async () => {
+          const fileBuffer = Buffer.concat(buffer);
+
+          // Upload file to B2
+          const uploadResponse = await b2.uploadFile({
+            bucketId: process.env.B2_BUCKET_ID,  // Ensure this is set
+            fileName: filename,
+            mimeType: mimetype,
+            data: fileBuffer,
+          });
+
+          console.log('File uploaded successfully:', uploadResponse);
+        });
+      } catch (error) {
+        console.error('Upload failed:', error);
+        res.status(500).json({
+          success: false,
+          message: 'File upload failed',
+          error,
+        });
+      }
+    });
+
+    bb.on('finish', () => {
+      res.status(200).json({
+        success: true,
+        message: 'Upload complete',
+      });
+    });
+
+    req.pipe(bb);  // Pipe the request to Busboy
+  } else {
+    res.status(405).json({
+      success: false,
+      message: 'Method Not Allowed',
+    });
+  }
 };
-
-const QuizFileGenerator = ({ quizTitle, languageOne, languageTwo, quizData, userId }) => {
-    
-    const handleUploadToB2 = async () => {
-        // Create quiz metadata object
-        const quizFileData = {
-            quizId: generateQuizId(),
-            quizTitle: quizTitle || 'Untitled Quiz',
-            userId: userId || 'Guest User',
-            languageOne: languageOne,
-            languageTwo: languageTwo,
-            quizData: quizData.filter(pair => 
-                pair.phraseOne && pair.phraseTwo // Filter out invalid phrases
-            )
-        };
-
-        // Create a downloadable file blob
-        const fileData = new Blob([JSON.stringify(quizFileData, null, 2)], { type: 'application/json' });
-
-        // Use FormData to upload file
-        const formData = new FormData();
-        formData.append('file', fileData, `${quizTitle || 'quiz'}_${quizFileData.quizId}.json`);
-
-        try {
-            const response = await fetch('/api/uploadToB2', {
-                method: 'POST',
-                body: formData,
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                console.log('File uploaded successfully', result.data);
-            } else {
-                console.error('File upload failed', result.message);
-            }
-        } catch (error) {
-            console.error('Upload error', error);
-        }
-    };
-
-    return (
-        <button onClick={handleUploadToB2}>
-            Upload Quiz File
-        </button>
-    );
-};
-
-export default QuizFileGenerator;
