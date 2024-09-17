@@ -7,10 +7,10 @@ export const config = {
   },
 };
 
-// Initialize Backblaze B2 with the new environment variable names
+// Initialize Backblaze B2
 const b2 = new BackblazeB2({
-  applicationKeyId: process.env.BACKBLAZE_APPLICATION_KEY_ID, // Update to new variable
-  applicationKey: process.env.BACKBLAZE_APPLICATION_KEY,     // Update to new variable
+  applicationKeyId: process.env.BACKBLAZE_APPLICATION_KEY_ID,
+  applicationKey: process.env.BACKBLAZE_APPLICATION_KEY,
 });
 
 const handler = async (req, res) => {
@@ -20,18 +20,39 @@ const handler = async (req, res) => {
 
     let uploadError = null;
 
+    // Store the file buffer
+    let fileBuffer = [];
+    let fileName = '';
+    let mimeType = '';
+
     // When a file is received
-    bb.on('file', async (fieldname, file, filename, encoding, mimetype) => {
+    bb.on('file', (fieldname, file, filename, encoding, mimetype) => {
+      fileName = filename;
+      mimeType = mimetype;
+
+      // Collect the file stream chunks
+      file.on('data', (data) => {
+        fileBuffer.push(data);
+      });
+
+      // When the file stream ends
+      file.on('end', () => {
+        fileBuffer = Buffer.concat(fileBuffer); // Combine the chunks into a single buffer
+      });
+    });
+
+    // When busboy finishes processing
+    bb.on('finish', async () => {
       try {
         // Authorize with Backblaze B2
         await b2.authorize();
 
-        // Upload the file directly from the stream
+        // Upload the file using the buffer
         const uploadResponse = await b2.uploadFile({
-          bucketId: process.env.BACKBLAZE_BUCKET_ID, // Update to new variable
-          fileName: filename, // Use the original file name
-          data: file, // Directly stream the file to Backblaze
-          mime: mimetype, // Pass the MIME type
+          bucketId: process.env.BACKBLAZE_BUCKET_ID,
+          fileName: fileName, // Use the original file name
+          data: fileBuffer, // Use the file buffer
+          mime: mimeType, // Pass the MIME type
         });
 
         // Return the upload response after successful upload
@@ -41,7 +62,6 @@ const handler = async (req, res) => {
           data: uploadResponse.data,
         });
       } catch (error) {
-        uploadError = error;
         console.error('Upload failed: ', error);
         res.status(500).json({
           success: false,
