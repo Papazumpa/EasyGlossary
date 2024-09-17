@@ -8,7 +8,6 @@ const ImageUpload = ({ onTextDetected, onJsonData }) => {
     const [image, setImage] = useState(null);
     const [loading, setLoading] = useState(false);
 
-    // Function to handle Cloudinary upload and size check
     const uploadToCloudinaryWithSizeCheck = async (base64Image, retries = 5) => {
         let uploadResult;
         for (let attempt = 0; attempt < retries; attempt++) {
@@ -21,6 +20,7 @@ const ImageUpload = ({ onTextDetected, onJsonData }) => {
             uploadResult = await response.json();
             console.log('Cloudinary upload result:', uploadResult);
 
+            // Check if the image size is within the limit
             if (uploadResult.secure_url && uploadResult.size <= 1024 * 1024) {
                 return uploadResult.secure_url; // Image size is within the limit
             }
@@ -30,9 +30,11 @@ const ImageUpload = ({ onTextDetected, onJsonData }) => {
             }
 
             // Resize and compress the image for the next attempt
-            base64Image = await resizeAndGrayscaleImage(base64Image, 1024); // Adjust the resize as needed
+            console.log('Resizing image and retrying...');
+            base64Image = await resizeAndGrayscaleImage(base64Image, 1024); // Update the base64 image with resized one
         }
     };
+
 
     // Function to resize and grayscale image
     const resizeAndGrayscaleImage = (base64Image, maxSizeKB) => {
