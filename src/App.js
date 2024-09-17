@@ -90,15 +90,22 @@ const App = () => {
 
     const handleJsonData = (jsonData) => {
         console.log('Received JSON data:', jsonData);
-        // Process JSON data to extract quiz information
-        const quizPairs = jsonData.map(item => {
-            // Adapt this based on the structure of your JSON data
+            // Process JSON data to extract quiz information
+            const quizPairs = jsonData.quizData.map(item => {
             const { phraseOne, phraseTwo } = item;
             return { phraseOne, phraseTwo };
         });
         setQuizData(quizPairs);
+        setLanguageOne(jsonData.languageOne);
+        setLanguageTwo(jsonData.languageTwo);
+        setL1Title(jsonData.quizTitle); // Set title from JSON data
+        setL2Title(jsonData.quizTitle); // Assuming the title is the same for both languages or adjust as needed
     };
 
+
+
+
+    
     return (
         <Router>
             <Routes>
