@@ -21,7 +21,7 @@ const ImageUpload = ({ onTextDetected, onJsonData }) => {
             console.log('Cloudinary upload result:', uploadResult);
 
             // Check if the image size is within the limit
-            if (uploadResult.secure_url && uploadResult.size <= 1024 * 1024) {
+            if (uploadResult.secure_url && uploadResult.size <= 1.024e+6) {
                 return uploadResult.secure_url; // Image size is within the limit
             }
 
