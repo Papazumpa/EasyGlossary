@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 const CLOUDINARY_UPLOAD_URL = '/api/uploadImage'; // URL of your Vercel serverless function
 const OCR_SPACE_API_URL = 'https://api.ocr.space/parse/image'; // OCR.Space API URL
 
-const ImageUpload = ({ onTextDetected }) => {
+const ImageUpload = ({ onTextDetected, onJsonData }) => {
     const [image, setImage] = useState(null);
     const [loading, setLoading] = useState(false);
 
@@ -144,9 +144,7 @@ const ImageUpload = ({ onTextDetected }) => {
                 reader.onload = (event) => {
                     try {
                         const jsonData = JSON.parse(event.target.result);
-                        // Handle the JSON data as needed
-                        console.log('JSON data:', jsonData);
-                        // You can call a function or set state with jsonData if needed
+                        onJsonData(jsonData); // Pass the JSON data to the parent component
                     } catch (error) {
                         console.error('Error parsing JSON:', error);
                     }
