@@ -27,10 +27,15 @@ const handler = async (req, res) => {
 
     // When a file is received
     bb.on('file', (fieldname, file, filename, encoding, mimetype) => {
-      fileName = filename;
-      mimeType = mimetype;
+      // Log what `filename` and `mimetype` look like
+      console.log(`Field name: ${fieldname}`);
+      console.log('File object: ', file);
+      console.log('Filename object: ', filename);
+      console.log('MIME type:', mimetype);
 
-      console.log(`Received file: ${fileName} with MIME type: ${mimeType}`);
+      // Capture the filename and mimetype properly
+      fileName = filename ? filename.toString() : 'default-filename';
+      mimeType = mimetype || 'application/octet-stream'; // Default MIME type if not provided
 
       // Collect the file stream chunks
       file.on('data', (data) => {
