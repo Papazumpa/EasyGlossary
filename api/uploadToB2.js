@@ -26,20 +26,34 @@ const handler = async (req, res) => {
     let fileName = '';
     let mimeType = '';
 
-    // When a file is received
+const streamToBuffer = async (stream) => {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    stream.on('data', (chunk) => chunks.push(chunk));
+    stream.on('error', reject);
+    stream.on('end', () => resolve(Buffer.concat(chunks)));
+  });
+};
+
 bb.on('file', async (fieldname, file, filename, encoding, mimetype) => {
   try {
     console.log('Received file:', filename, 'with MIME type:', mimetype);
 
+    // Convert FileStream to Buffer
+    const fileBuffer = await streamToBuffer(file);
+
+    // Authorize with Backblaze B2
     await b2.authorize();
 
+    // Upload the file as a buffer
     const uploadResponse = await b2.uploadFile({
       bucketId: process.env.B2_BUCKET_ID,
       fileName: String(filename), // Ensure filename is a string
-      data: file, // Directly stream the file to Backblaze
-      mime: mimetype || 'application/octet-stream', // Use provided MIME type or fallback
+      data: fileBuffer, // Pass the buffer instead of stream
+      mime: mimetype || 'application/octet-stream', // Use the MIME type or fallback
     });
 
+    // Return the upload response
     res.status(200).json({
       success: true,
       message: 'File uploaded successfully',
@@ -54,6 +68,7 @@ bb.on('file', async (fieldname, file, filename, encoding, mimetype) => {
     });
   }
 });
+
 
 
     // If there's an error with parsing
