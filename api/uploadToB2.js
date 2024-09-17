@@ -27,45 +27,34 @@ const handler = async (req, res) => {
     let mimeType = '';
 
     // When a file is received
-    bb.on('file', (fieldname, file, filename, encoding, mimetype) => {
-      fileName = filename; // Ensure filename is a string
-      mimeType = mimetype;
+bb.on('file', async (fieldname, file, filename, encoding, mimetype) => {
+  try {
+    console.log('Received file:', filename, 'with MIME type:', mimetype);
 
-      // Collect the file data into a buffer
-      file.on('data', (data) => {
-        fileBuffer = Buffer.concat([fileBuffer, data]);
-      });
+    await b2.authorize();
 
-      file.on('end', async () => {
-        try {
-          // Authorize with Backblaze B2
-          await b2.authorize();
-
-          // Upload the file buffer
-          const uploadResponse = await b2.uploadFile({
-            bucketId: process.env.B2_BUCKET_ID,
-            fileName: fileName, // Ensure fileName is a string
-            data: fileBuffer,
-            mime: mimeType,
-          });
-
-          // Return the upload response after successful upload
-          res.status(200).json({
-            success: true,
-            message: 'File uploaded successfully',
-            data: uploadResponse.data,
-          });
-        } catch (error) {
-          uploadError = error;
-          console.error('Upload failed: ', error);
-          res.status(500).json({
-            success: false,
-            message: 'Failed to upload file',
-            error,
-          });
-        }
-      });
+    const uploadResponse = await b2.uploadFile({
+      bucketId: process.env.B2_BUCKET_ID,
+      fileName: String(filename), // Ensure filename is a string
+      data: file, // Directly stream the file to Backblaze
+      mime: mimetype || 'application/octet-stream', // Use provided MIME type or fallback
     });
+
+    res.status(200).json({
+      success: true,
+      message: 'File uploaded successfully',
+      data: uploadResponse.data,
+    });
+  } catch (error) {
+    console.error('Upload failed: ', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to upload file',
+      error,
+    });
+  }
+});
+
 
     // If there's an error with parsing
     bb.on('error', (err) => {
