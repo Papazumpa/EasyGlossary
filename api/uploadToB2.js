@@ -9,8 +9,8 @@ export const config = {
 
 // Initialize Backblaze B2
 const b2 = new BackblazeB2({
-  applicationKeyId: process.env.BACKBLAZE_APPLICATION_KEY_ID,
-  applicationKey: process.env.BACKBLAZE_APPLICATION_KEY,
+  accountId: process.env.B2_ACCOUNT_ID,
+  applicationKey: process.env.B2_APPLICATION_KEY,
 });
 
 const handler = async (req, res) => {
@@ -30,6 +30,8 @@ const handler = async (req, res) => {
       fileName = filename;
       mimeType = mimetype;
 
+      console.log(`Received file: ${fileName} with MIME type: ${mimeType}`);
+
       // Collect the file stream chunks
       file.on('data', (data) => {
         fileBuffer.push(data);
@@ -44,12 +46,17 @@ const handler = async (req, res) => {
     // When busboy finishes processing
     bb.on('finish', async () => {
       try {
+        // Check if fileName is a valid string
+        if (typeof fileName !== 'string' || fileName.trim() === '') {
+          throw new Error('Invalid file name');
+        }
+
         // Authorize with Backblaze B2
         await b2.authorize();
 
         // Upload the file using the buffer
         const uploadResponse = await b2.uploadFile({
-          bucketId: process.env.BACKBLAZE_BUCKET_ID,
+          bucketId: process.env.B2_BUCKET_ID,
           fileName: fileName, // Use the original file name
           data: fileBuffer, // Use the file buffer
           mime: mimeType, // Pass the MIME type
@@ -66,7 +73,7 @@ const handler = async (req, res) => {
         res.status(500).json({
           success: false,
           message: 'Failed to upload file',
-          error,
+          error: error.message, // Provide a detailed error message
         });
       }
     });
