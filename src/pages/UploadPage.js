@@ -1,72 +1,50 @@
-import React, { useState } from 'react';
-import ImageUpload from './components/ImageUpload'; // Ensure the path is correct
+import React, { useEffect, useState } from 'react';
+import { saveQuiz, getAllQuizzes } from './utils/indexedDB'; // Adjust the path accordingly
 
 const UploadPage = () => {
-    const [detectedText, setDetectedText] = useState('');
-    const [processedText, setProcessedText] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [quizData, setQuizData] = useState([]);
-    const [languageOne, setLanguageOne] = useState('');
-    const [languageTwo, setLanguageTwo] = useState('');
-    const [l1Title, setL1Title] = useState('');
-    const [l2Title, setL2Title] = useState('');
+  const [quizzes, setQuizzes] = useState([]);
 
-    // Function to handle API calls and processing
-    const callCohereAPI = async (text) => {
-        setLoading(true);
-        try {
-            // Replace with actual API call
-            // const response = await fetch('YOUR_API_URL', { method: 'POST', body: JSON.stringify({ text }) });
-            // const data = await response.json();
-            // setProcessedText(data.text);
-            // Update quiz data, titles, and languages as needed
-        } catch (error) {
-            console.error('Error calling API:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+  // Function to handle saving a quiz (maybe after image upload)
+  const handleSaveQuiz = async (quiz) => {
+    try {
+      const id = await saveQuiz(quiz);
+      console.log(`Quiz saved with ID: ${id}`);
+      loadQuizzes(); // Refresh quiz list after saving
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
-    // Handle detected text from OCR
-    const handleTextDetected = (text) => {
-        setDetectedText(text);
-        callCohereAPI(text);
-    };
+  // Load all saved quizzes from IndexedDB
+  const loadQuizzes = async () => {
+    try {
+      const storedQuizzes = await getAllQuizzes();
+      setQuizzes(storedQuizzes);
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
-    // Handle JSON data
-    const handleJsonData = (jsonData) => {
-        // Process the JSON data as needed
-        const quizPairs = jsonData.map(item => ({
-            phraseOne: item.phraseOne,
-            phraseTwo: item.phraseTwo
-        }));
-        setQuizData(quizPairs);
-        // Update language, titles, etc. based on JSON data
-    };
+  useEffect(() => {
+    // Load quizzes on component mount
+    loadQuizzes();
+  }, []);
 
-    return (
-        <div>
-            <h1>Upload Image or JSON</h1>
-            <ImageUpload 
-                onTextDetected={handleTextDetected}
-                onJsonData={handleJsonData}
-            />
-            <h2>Detected Text</h2>
-            <pre>{detectedText}</pre>
-            {loading ? <p>Loading...</p> : (
-                <>
-                    <h2>Processed Text</h2>
-                    <pre>{processedText}</pre>
-                    {quizData.length > 0 && (
-                        <>
-                            <h2>Generated Quiz</h2>
-                            {/* Render quiz component with quizData */}
-                        </>
-                    )}
-                </>
-            )}
-        </div>
-    );
+  return (
+    <div>
+      <h1>Upload and Save Quiz</h1>
+      {/* Replace with your image upload and quiz creation logic */}
+      <button onClick={() => handleSaveQuiz({ name: 'Example Quiz', data: 'Some data' })}>
+        Save Quiz
+      </button>
+      <h2>Saved Quizzes</h2>
+      <ul>
+        {quizzes.map((quiz) => (
+          <li key={quiz.id}>{quiz.name}</li>
+        ))}
+      </ul>
+    </div>
+  );
 };
 
 export default UploadPage;
