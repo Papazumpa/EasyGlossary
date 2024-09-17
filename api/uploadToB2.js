@@ -7,7 +7,7 @@ const b2 = new B2({
   applicationKey: process.env.B2_APPLICATION_KEY,  // Replace with your env variable
 });
 
-exports.handler = async (req, res) => {
+module.exports = async (req, res) => {  // Changed to module.exports
   if (req.method === 'POST') {
     const bb = new Busboy({ headers: req.headers });
 
