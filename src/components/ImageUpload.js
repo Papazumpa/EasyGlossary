@@ -7,85 +7,27 @@ const OCR_SPACE_API_URL = 'https://api.ocr.space/parse/image'; // OCR.Space API 
 const ImageUpload = ({ onTextDetected, onJsonData }) => {
     const [image, setImage] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [errorMessage, setErrorMessage] = useState(null); // State for error message
 
-    // Function to handle Cloudinary upload and size check
-    const uploadToCloudinaryWithSizeCheck = async (base64Image, retries = 5) => {
-        let uploadResult;
-        for (let attempt = 0; attempt < retries; attempt++) {
-            const response = await fetch(CLOUDINARY_UPLOAD_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ image: base64Image })
-            });
+    const uploadToCloudinaryWithSizeCheck = async (base64Image) => {
+        const maxFileSizeInBytes = 1048576; // 1MB in bytes (1,048,576 bytes)
 
-            uploadResult = await response.json();
-            console.log('Cloudinary upload result:', uploadResult);
-
-            if (uploadResult.secure_url && uploadResult.size <= 1024 * 1024) {
-                return uploadResult.secure_url; // Image size is within the limit
-            }
-
-            if (attempt === retries - 1) {
-                throw new Error('Image size exceeded limit after multiple attempts.');
-            }
-
-            // Resize and compress the image for the next attempt
-            base64Image = await resizeAndGrayscaleImage(base64Image, 1024); // Adjust the resize as needed
-        }
-    };
-
-    // Function to resize and grayscale image
-    const resizeAndGrayscaleImage = (base64Image, maxSizeKB) => {
-        return new Promise((resolve) => {
-            const img = new Image();
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-
-            img.onload = () => {
-                canvas.width = img.width;
-                canvas.height = img.height;
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-                // Convert to grayscale
-                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const data = imageData.data;
-
-                for (let i = 0; i < data.length; i += 4) {
-                    const red = data[i];
-                    const green = data[i + 1];
-                    const blue = data[i + 2];
-                    const grayscale = 0.299 * red + 0.587 * green + 0.114 * blue;
-
-                    data[i] = data[i + 1] = data[i + 2] = grayscale; // Set the RGB to grayscale value
-                }
-
-                ctx.putImageData(imageData, 0, 0);
-
-                // Compress image to ensure file size is under maxSizeKB
-                let quality = 1.0;
-                const compressImage = () => {
-                    return new Promise((resolveCompress) => {
-                        canvas.toBlob((blob) => {
-                            if (blob.size / 1024 > maxSizeKB && quality > 0.1) {
-                                // If file is too large, reduce quality and try again
-                                quality -= 0.1;
-                                compressImage().then(resolveCompress);
-                            } else {
-                                resolveCompress(blob); // Return compressed blob
-                            }
-                        }, 'image/jpeg', quality); // Compress with current quality
-                    });
-                };
-
-                compressImage().then((blob) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result);
-                    reader.readAsDataURL(blob);
-                });
-            };
-
-            img.src = base64Image;
+        const response = await fetch(CLOUDINARY_UPLOAD_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: base64Image })
         });
+
+        const uploadResult = await response.json();
+        console.log('Cloudinary upload result:', uploadResult);
+
+        // Check the `bytes` field for the file size (1MB = 1,048,576 bytes)
+        if (uploadResult.secure_url && uploadResult.bytes <= maxFileSizeInBytes) {
+            console.log(`Image size is within limit: ${uploadResult.bytes} bytes.`);
+            return uploadResult.secure_url; // Image size is within the limit
+        } else {
+            throw new Error(`Image size exceeds limit: ${uploadResult.bytes} bytes.`);
+        }
     };
 
     const convertToBase64 = (file) => {
@@ -99,6 +41,7 @@ const ImageUpload = ({ onTextDetected, onJsonData }) => {
 
     const processImage = async (file) => {
         setLoading(true);
+        setErrorMessage(null); // Clear any previous errors
 
         try {
             // Convert image to base64
@@ -128,6 +71,7 @@ const ImageUpload = ({ onTextDetected, onJsonData }) => {
             }
         } catch (error) {
             console.error('Error during image processing:', error);
+            setErrorMessage(error.message); // Set the error message for display
         } finally {
             setLoading(false);
         }
@@ -137,8 +81,8 @@ const ImageUpload = ({ onTextDetected, onJsonData }) => {
         const file = e.target.files[0];
         if (file) {
             if (file.type.startsWith('image/')) {
-                setImage(URL.createObjectURL(file));
-                await processImage(file);
+                setImage(URL.createObjectURL(file)); // Update image preview
+                await processImage(file); // Process the selected image
             } else if (file.type === 'application/json') {
                 const reader = new FileReader();
                 reader.onload = (event) => {
@@ -161,6 +105,7 @@ const ImageUpload = ({ onTextDetected, onJsonData }) => {
             <input type="file" onChange={handleFileChange} accept="image/*,application/json" />
             {image && <img src={image} alt="Selected" />}
             {loading && <p>Processing...</p>}
+            {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
         </div>
     );
 };
