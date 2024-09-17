@@ -7,6 +7,22 @@ const b2 = new B2({
   applicationKey: process.env.B2_APPLICATION_KEY,  // Replace with your env variable
 });
 
+// Function to list files in the bucket
+async function listFiles(bucketId, fileName) {
+  try {
+    const response = await b2.listFileNames({
+      bucketId,
+      maxFileCount: 1000,  // Adjust as needed
+    });
+
+    const files = response.data.files || [];
+    return files.some(file => file.fileName === fileName);
+  } catch (error) {
+    console.error('Error listing files:', error);
+    throw new Error('Failed to list files');
+  }
+}
+
 module.exports = async (req, res) => {
   if (req.method === 'POST') {
     const bb = new Busboy({ headers: req.headers });  // Correct way to initialize Busboy
@@ -26,62 +42,45 @@ module.exports = async (req, res) => {
         file.on('end', async () => {
           const fileBuffer = Buffer.concat(buffer);
 
-          try {
-            // Upload file to B2
-            const uploadResponse = await b2.uploadFile({
-              bucketId: process.env.B2_BUCKET_ID,  // Ensure this is set
-              fileName: filename,
-              mimeType: 'application/json',  // Set MIME type directly to 'application/json'
-              data: fileBuffer,
+          // Upload file to B2
+          const uploadResponse = await b2.uploadFile({
+            bucketId: process.env.B2_BUCKET_ID,  // Ensure this is set
+            fileName: filename,
+            mimeType: mimetype || 'application/json',  // Default to JSON MIME type
+            data: fileBuffer,
+          });
+
+          console.log('File uploaded successfully:', uploadResponse);
+
+          // Verify file existence
+          const fileExists = await listFiles(process.env.B2_BUCKET_ID, filename);
+
+          if (fileExists) {
+            console.log('File is present in the bucket.');
+            res.status(200).json({
+              success: true,
+              message: 'Upload complete',
             });
-
-            console.log('File uploaded successfully:', uploadResponse);
-
-            // List files in the bucket to verify upload
-            const listFilesResponse = await b2.listFileNames({
-              bucketId: process.env.B2_BUCKET_ID,  // Ensure this is set
-              maxFileCount: 100,  // Adjust based on your needs
-            });
-
-            const fileNames = listFilesResponse.data.files.map(file => file.fileName);
-            console.log('Files in bucket:', fileNames);
-
-            if (fileNames.includes(filename)) {
-              res.status(200).json({
-                success: true,
-                message: 'Upload complete',
-                uploadedFile: filename,
-                filesInBucket: fileNames,
-              });
-            } else {
-              res.status(500).json({
-                success: false,
-                message: 'File not found in bucket after upload',
-                uploadedFile: filename,
-                filesInBucket: fileNames,
-              });
-            }
-          } catch (uploadError) {
-            console.error('Upload failed:', uploadError);
+          } else {
+            console.error('File is not present in the bucket.');
             res.status(500).json({
               success: false,
               message: 'File upload failed',
-              error: uploadError,
             });
           }
         });
       } catch (error) {
-        console.error('File processing failed:', error);
+        console.error('Upload failed:', error);
         res.status(500).json({
           success: false,
-          message: 'File processing failed',
+          message: 'File upload failed',
           error,
         });
       }
     });
 
     bb.on('finish', () => {
-      // Response handling is already done in 'end' event handler of file stream
+      // End the response if file stream finishes
     });
 
     req.pipe(bb);  // Pipe the request to Busboy
