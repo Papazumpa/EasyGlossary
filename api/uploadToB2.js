@@ -69,8 +69,6 @@ bb.on('file', async (fieldname, file, filename, encoding, mimetype) => {
   }
 });
 
-
-
     // If there's an error with parsing
     bb.on('error', (err) => {
       uploadError = err;
