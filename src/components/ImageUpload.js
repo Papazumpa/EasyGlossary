@@ -125,37 +125,34 @@ const ImageUpload = ({ onTextDetected }) => {
         });
     };
 
-    const handleImageChange = async (e) => {
+    const handleFileChange = async (e) => {
         const file = e.target.files[0];
         if (file) {
-            setImage(URL.createObjectURL(file));
-            await processImage(file);
-        }
-    };
-
-    const handleJsonChange = async (e) => {
-        const file = e.target.files[0];
-        if (file && file.type === 'application/json') {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                try {
-                    const jsonData = JSON.parse(event.target.result);
-                    // Handle the JSON data as needed
-                    console.log('JSON data:', jsonData);
-                } catch (error) {
-                    console.error('Error parsing JSON:', error);
-                }
-            };
-            reader.readAsText(file);
-        } else {
-            console.error('Please upload a valid JSON file.');
+            if (file.type.startsWith('image/')) {
+                setImage(URL.createObjectURL(file));
+                await processImage(file);
+            } else if (file.type === 'application/json') {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const jsonData = JSON.parse(event.target.result);
+                        // Handle the JSON data as needed
+                        console.log('JSON data:', jsonData);
+                        // You can call a function or set state with jsonData if needed
+                    } catch (error) {
+                        console.error('Error parsing JSON:', error);
+                    }
+                };
+                reader.readAsText(file);
+            } else {
+                console.error('Please upload a valid image or JSON file.');
+            }
         }
     };
 
     return (
         <div>
-            <input type="file" onChange={handleImageChange} accept="image/*" />
-            <input type="file" onChange={handleJsonChange} accept="application/json" />
+            <input type="file" onChange={handleFileChange} accept="image/*,application/json" />
             {image && <img src={image} alt="Selected" />}
             {loading && <p>Processing...</p>}
         </div>
