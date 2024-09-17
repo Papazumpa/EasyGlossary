@@ -28,7 +28,7 @@ const handler = async (req, res) => {
 
     // When a file is received
     bb.on('file', (fieldname, file, filename, encoding, mimetype) => {
-      fileName = filename;
+      fileName = filename; // Ensure filename is a string
       mimeType = mimetype;
 
       // Collect the file data into a buffer
@@ -44,7 +44,7 @@ const handler = async (req, res) => {
           // Upload the file buffer
           const uploadResponse = await b2.uploadFile({
             bucketId: process.env.B2_BUCKET_ID,
-            fileName: fileName,
+            fileName: fileName, // Ensure fileName is a string
             data: fileBuffer,
             mime: mimeType,
           });
