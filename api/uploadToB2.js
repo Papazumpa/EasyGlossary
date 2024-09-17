@@ -7,25 +7,9 @@ const b2 = new B2({
   applicationKey: process.env.B2_APPLICATION_KEY,  // Replace with your env variable
 });
 
-// Function to list files in the bucket
-async function listFiles(bucketId, fileName) {
-  try {
-    const response = await b2.listFileNames({
-      bucketId,
-      maxFileCount: 1000,  // Adjust as needed
-    });
-
-    const files = response.data.files || [];
-    return files.some(file => file.fileName === fileName);
-  } catch (error) {
-    console.error('Error listing files:', error);
-    throw new Error('Failed to list files');
-  }
-}
-
 module.exports = async (req, res) => {
   if (req.method === 'POST') {
-    const bb = new Busboy({ headers: req.headers });  // Correct way to initialize Busboy
+    const bb = Busboy({ headers: req.headers });  // Correct way to initialize Busboy
 
     bb.on('file', async (fieldname, file, filename, encoding, mimetype) => {
       try {
@@ -46,28 +30,11 @@ module.exports = async (req, res) => {
           const uploadResponse = await b2.uploadFile({
             bucketId: process.env.B2_BUCKET_ID,  // Ensure this is set
             fileName: filename,
-            mimeType: mimetype || 'application/json',  // Default to JSON MIME type
+            mimeType: mimetype,
             data: fileBuffer,
           });
 
           console.log('File uploaded successfully:', uploadResponse);
-
-          // Verify file existence
-          const fileExists = await listFiles(process.env.B2_BUCKET_ID, filename);
-
-          if (fileExists) {
-            console.log('File is present in the bucket.');
-            res.status(200).json({
-              success: true,
-              message: 'Upload complete',
-            });
-          } else {
-            console.error('File is not present in the bucket.');
-            res.status(500).json({
-              success: false,
-              message: 'File upload failed',
-            });
-          }
         });
       } catch (error) {
         console.error('Upload failed:', error);
@@ -80,7 +47,10 @@ module.exports = async (req, res) => {
     });
 
     bb.on('finish', () => {
-      // End the response if file stream finishes
+      res.status(200).json({
+        success: true,
+        message: 'Upload complete',
+      });
     });
 
     req.pipe(bb);  // Pipe the request to Busboy
