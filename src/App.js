@@ -66,19 +66,7 @@ const App = () => {
                 specialLines.l2Title = line.split('=')[1].trim();
                 return null;
             }
-
-            const [phraseOne, phraseTwo] = line.split('=').map(part => part.trim());
-
-            if (!phraseTwo) {
-                const userResponse = window.prompt(`The corresponding phrase for "${phraseOne}" is missing. Enter one or leave empty to remove this line:`);
-                if (userResponse) {
-                    return { phraseOne, phraseTwo: userResponse.trim() };
-                } else {
-                    return null;
-                }
-            }
-
-            return { phraseOne, phraseTwo };
+            return line.split('=').map(term => term.trim());
         }).filter(Boolean);
 
         setLanguageOne(specialLines.languageOne);
@@ -88,60 +76,26 @@ const App = () => {
         setQuizData(quizPairs);
     };
 
+    const handleJsonData = (jsonData) => {
+        console.log('Received JSON data:', jsonData);
+        // Process JSON data to extract quiz information
+        // You might need to adapt this part based on your specific JSON structure
+    };
+
     return (
         <Router>
             <Routes>
-                <Route 
-                    path="/" 
-                    element={<UploadPage 
-                        setDetectedText={setDetectedText} 
-                        callCohereAPI={callCohereAPI} 
-                        detectedText={detectedText} 
-                        loading={loading} 
-                        processedText={processedText} 
-                        quizData={quizData} 
-                        languageOne={languageOne}
-                        languageTwo={languageTwo}
-                        l1Title={l1Title}
-                        l2Title={l2Title}
-                    />} 
-                />
-                <Route path="/home" element={<HomePage />} />
+                <Route path="/" element={<HomePage />} />
                 <Route path="/about" element={<AboutPage />} />
-                <Route path="/quiz/:quizName" element={<QuizPage quizData={quizData} />} />
+                <Route path="/quiz" element={<Quiz />} />
+                <Route path="/quiz/:id" element={<QuizPage quizData={quizData} />} />
             </Routes>
+            <ImageUpload
+                onTextDetected={(text) => callCohereAPI(text)}
+                onJsonData={handleJsonData} // Handle JSON data
+            />
         </Router>
     );
 };
-
-const UploadPage = ({ setDetectedText, callCohereAPI, detectedText, loading, processedText, quizData, languageOne, languageTwo, l1Title, l2Title }) => (
-    <div>
-        <h1>Image to Quiz</h1>
-        <ImageUpload onTextDetected={(text) => {
-            setDetectedText(text);
-            callCohereAPI(text);
-        }} />
-        <h2>Detected Text</h2>
-        <pre>{detectedText}</pre>
-        {loading ? <p>Loading...</p> : (
-            <>
-                <h2>Processed Text</h2>
-                <pre>{processedText}</pre>
-                {quizData.length > 0 ? (
-                    <>
-                        <h2>Generated Quiz</h2>
-                        <Quiz 
-                            phrases={quizData} 
-                            languageOne={languageOne} 
-                            languageTwo={languageTwo} 
-                            l1Title={l1Title} 
-                            l2Title={l2Title} 
-                        />
-                    </>
-                ) : <p>No quiz generated yet.</p>}
-            </>
-        )}
-    </div>
-);
 
 export default App;
