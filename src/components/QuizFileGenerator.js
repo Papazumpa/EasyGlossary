@@ -1,5 +1,5 @@
-import React from 'react';
-import { saveQuiz } from '../utils/indexedDB'; // Adjust the path based on your project structure
+import React, { useState, useEffect } from 'react';
+import { saveQuiz, getAllQuizzes } from '../utils/indexedDB'; // Adjust the path based on your project structure
 
 // Utility function to generate a random ID
 const generateQuizId = () => {
@@ -7,7 +7,22 @@ const generateQuizId = () => {
 };
 
 const QuizFileGenerator = ({ quizTitle, languageOne, languageTwo, quizData, userId }) => {
-    
+    const [savedQuizzes, setSavedQuizzes] = useState([]);
+
+    useEffect(() => {
+        loadSavedQuizzes();
+    }, []);
+
+    const loadSavedQuizzes = async () => {
+        try {
+            const quizzes = await getAllQuizzes();
+            setSavedQuizzes(quizzes);
+        } catch (error) {
+            console.error('Error loading saved quizzes:', error);
+            // Handle error as needed
+        }
+    };
+
     const handleDownload = () => {
         // Create quiz metadata object
         const quizFileData = {
@@ -53,7 +68,8 @@ const QuizFileGenerator = ({ quizTitle, languageOne, languageTwo, quizData, user
             await saveQuiz(quizToSave);
             console.log('Quiz saved locally.');
 
-            // Optionally, notify user or update UI
+            // Reload saved quizzes
+            loadSavedQuizzes();
         } catch (error) {
             console.error('Failed to save quiz locally:', error);
             // Handle error as needed
@@ -68,6 +84,22 @@ const QuizFileGenerator = ({ quizTitle, languageOne, languageTwo, quizData, user
             <button onClick={handleSaveLocal}>
                 Save Locally
             </button>
+
+            {/* Display saved quizzes */}
+            {savedQuizzes.length > 0 && (
+                <div>
+                    <h2>Saved Quizzes:</h2>
+                    <ul>
+                        {savedQuizzes.map(quiz => (
+                            <li key={quiz.quizId}>
+                                <p>Title: {quiz.quizTitle}</p>
+                                <p>User: {quiz.userId}</p>
+                                {/* Add more details as needed */}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
         </div>
     );
 };
