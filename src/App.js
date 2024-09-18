@@ -121,19 +121,25 @@ const App = () => {
                 <Route
                     path="/"
                     element={
-                        <UploadPage
-                            setDetectedText={setDetectedText}
-                            callCohereAPI={callCohereAPI}
-                            detectedText={detectedText}
-                            loading={loading}
-                            processedText={processedText}
-                            quizData={quizData}
-                            languageOne={languageOne}
-                            languageTwo={languageTwo}
-                            l1Title={l1Title}
-                            l2Title={l2Title}
-                            onJsonData={handleJsonData} // Pass JSON handler
-                        />
+                        <>
+                            {/* Display QuizFileGenerator before ImageUpload */}
+                            <QuizFileGenerator savedQuizzes={savedQuizzes} />
+
+                            {/* UploadPage with ImageUpload */}
+                            <UploadPage
+                                setDetectedText={setDetectedText}
+                                callCohereAPI={callCohereAPI}
+                                detectedText={detectedText}
+                                loading={loading}
+                                processedText={processedText}
+                                quizData={quizData}
+                                languageOne={languageOne}
+                                languageTwo={languageTwo}
+                                l1Title={l1Title}
+                                l2Title={l2Title}
+                                onJsonData={handleJsonData} // Pass JSON handler
+                            />
+                        </>
                     }
                 />
                 <Route path="/home" element={<HomePage />} />
@@ -165,6 +171,7 @@ const UploadPage = ({
 }) => (
     <div>
         <h1>Image to Quiz</h1>
+        <QuizFileGenerator savedQuizzes={savedQuizzes} /> {/* Display QuizFileGenerator */}
         <ImageUpload
             onTextDetected={(text) => {
                 setDetectedText(text);
