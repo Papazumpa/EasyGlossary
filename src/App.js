@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'; 
 import ImageUpload from './components/ImageUpload'; 
 import Quiz from './components/Quiz'; 
@@ -128,6 +128,12 @@ const App = () => {
                 <Route path="/home" element={<HomePage />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/quiz/:quizName" element={<QuizPage quizData={quizData} />} />
+
+                {/* Route for QuizFileGenerator */}
+                <Route
+                    path="/saved-quizzes"
+                    element={<QuizFileGenerator savedQuizzes={savedQuizzes} />} // Pass saved quizzes to QuizFileGenerator
+                />
             </Routes>
         </Router>
     );
