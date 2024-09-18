@@ -1,4 +1,5 @@
 import React from 'react';
+import { saveQuiz } from '../utils/indexedDB'; // Adjust the path based on your project structure
 
 // Utility function to generate a random ID
 const generateQuizId = () => {
@@ -34,10 +35,38 @@ const QuizFileGenerator = ({ quizTitle, languageOne, languageTwo, quizData, user
         URL.revokeObjectURL(url);
     };
 
+    const handleSaveLocal = async () => {
+        try {
+            // Create quiz object for saving
+            const quizToSave = {
+                quizId: generateQuizId(),
+                quizTitle: quizTitle || 'Untitled Quiz',
+                userId: userId || 'Guest User',
+                languageOne: languageOne,
+                languageTwo: languageTwo,
+                quizData: quizData.filter(pair => 
+                    pair.phraseOne && pair.phraseTwo // Filter out invalid phrases
+                )
+            };
+
+            // Save quiz to IndexedDB
+            await saveQuiz(quizToSave);
+            console.log('Quiz saved locally.');
+
+            // Optionally, notify user or update UI
+        } catch (error) {
+            console.error('Failed to save quiz locally:', error);
+            // Handle error as needed
+        }
+    };
+
     return (
         <div>
             <button onClick={handleDownload}>
                 Download Quiz File
+            </button>
+            <button onClick={handleSaveLocal}>
+                Save Locally
             </button>
         </div>
     );
