@@ -39,14 +39,18 @@ const App = () => {
         setLoading(true);
 
         try {
-            // Simulate API call
-            // Replace with your actual API call logic
-            setTimeout(() => {
-                const correctedText = ocrOutput.toUpperCase(); // Example processing
-                setProcessedText(correctedText);
-                processText(correctedText);
-                setLoading(false);
-            }, 1000);
+            const response = await fetch('/api/cohere', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ ocrOutput })
+            });
+            const data = await response.json();
+            const correctedText = data.result;
+            setProcessedText(correctedText);
+            processText(correctedText);
+            setLoading(false);
         } catch (error) {
             console.error('Error calling Cohere API:', error);
             setLoading(false);
@@ -140,6 +144,7 @@ const App = () => {
                 />
                 <Route path="/home" element={<HomePage />} />
                 <Route path="/about" element={<AboutPage />} />
+                <Route path="/quiz/:quizId" element={<QuizPage />} />
                 <Route path="/quiz/:quizName" element={<QuizPage quizData={quizData} />} />
 
                 {/* Route for QuizFileGenerator */}
