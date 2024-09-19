@@ -8,7 +8,6 @@ import QuizPage from './pages/QuizPage';
 import QuizFileGenerator from './components/QuizFileGenerator'; // Import the QuizFileGenerator component
 import { getAllQuizzes } from './utils/indexedDB'; // Import the IndexedDB functions
 
-
 const App = () => {
     const [quizData, setQuizData] = useState([]);
     const [detectedText, setDetectedText] = useState('');
@@ -21,49 +20,45 @@ const App = () => {
     const [savedQuizzes, setSavedQuizzes] = useState([]); // State to hold saved quizzes
 
     useEffect(() => {
-        // Load saved quizzes when component mounts
-        loadSavedQuizzes();
+        loadSavedQuizzes(); // Load saved quizzes on component mount
     }, []);
 
     const loadSavedQuizzes = async () => {
         try {
-            // Fetch all saved quizzes from IndexedDB
             const quizzes = await getAllQuizzes();
             setSavedQuizzes(quizzes);
         } catch (error) {
             console.error('Error loading saved quizzes:', error);
-            // Handle error as needed
         }
     };
 
     const callCohereAPI = async (ocrOutput) => {
-        setLoading(true);  // Set loading state
-    
+        setLoading(true);
+
         try {
             const response = await fetch('/api/cohere', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ ocrOutput }),  // Send OCR output to the API
+                body: JSON.stringify({ ocrOutput }),
             });
-    
+
             if (!response.ok) {
                 throw new Error('Failed to call Cohere API');
             }
-    
-            const data = await response.json();  // Get the processed data from the response
-            const correctedText = data.result;   // Access the result of the API call
-            setProcessedText(correctedText);     // Update the processed text state
-            processText(correctedText);          // Process the returned text
-    
-            setLoading(false);  // Set loading state to false once the process is complete
+
+            const data = await response.json();
+            const correctedText = data.result;
+            setProcessedText(correctedText);
+            processText(correctedText);
+
+            setLoading(false);
         } catch (error) {
-            console.error('Error calling Cohere API:', error);  // Log any errors
-            setLoading(false);  // Reset loading state on error
+            console.error('Error calling Cohere API:', error);
+            setLoading(false);
         }
     };
-    
 
     const processText = (text) => {
         const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
@@ -115,7 +110,6 @@ const App = () => {
 
     const handleJsonData = (jsonData) => {
         console.log('Received JSON data:', jsonData);
-        // Process JSON data to extract quiz information
         const quizPairs = jsonData.quizData.map(item => {
             const { phraseOne, phraseTwo } = item;
             return { phraseOne, phraseTwo };
@@ -124,7 +118,7 @@ const App = () => {
         setLanguageOne(jsonData.languageOne);
         setLanguageTwo(jsonData.languageTwo);
         setL1Title(jsonData.quizTitle); // Set title from JSON data
-        setL2Title(jsonData.quizTitle); // Assuming the title is the same for both languages or adjust as needed
+        setL2Title(jsonData.quizTitle); // Adjust as needed
     };
 
     return (
@@ -133,21 +127,19 @@ const App = () => {
                 <Route
                     path="/"
                     element={
-                      <>
-                            <UploadPage
-                                setDetectedText={setDetectedText}
-                                callCohereAPI={callCohereAPI}
-                                detectedText={detectedText}
-                                loading={loading}
-                                processedText={processedText}
-                                quizData={quizData}
-                                languageOne={languageOne}
-                                languageTwo={languageTwo}
-                                l1Title={l1Title}
-                                l2Title={l2Title}
-                                onJsonData={handleJsonData} // Pass JSON handler
-                            />
-                        </>
+                        <UploadPage
+                            setDetectedText={setDetectedText}
+                            callCohereAPI={callCohereAPI}
+                            detectedText={detectedText}
+                            loading={loading}
+                            processedText={processedText}
+                            quizData={quizData}
+                            languageOne={languageOne}
+                            languageTwo={languageTwo}
+                            l1Title={l1Title}
+                            l2Title={l2Title}
+                            onJsonData={handleJsonData} // Pass JSON handler
+                        />
                     }
                 />
                 <Route path="/home" element={<HomePage />} />
@@ -158,7 +150,7 @@ const App = () => {
                 {/* Route for QuizFileGenerator */}
                 <Route
                     path="/saved-quizzes"
-                    element={<QuizFileGenerator savedQuizzes={savedQuizzes} />} // Pass saved quizzes to QuizFileGenerator
+                    element={<QuizFileGenerator savedQuizzes={savedQuizzes} onJsonData={handleJsonData} />} // Pass saved quizzes to QuizFileGenerator
                 />
             </Routes>
         </Router>
