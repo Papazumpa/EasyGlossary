@@ -167,7 +167,6 @@ const UploadPage = ({
 }) => (
     <div>
         <h1>Image to Quiz</h1>
-        <QuizFileGenerator savedQuizzes={savedQuizzes} /> {/* Display QuizFileGenerator */}
         <ImageUpload
             onTextDetected={(text) => {
                 setDetectedText(text);
