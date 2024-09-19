@@ -121,11 +121,7 @@ const App = () => {
                 <Route
                     path="/"
                     element={
-                        <>
-                            {/* Display QuizFileGenerator before ImageUpload */}
-                            <QuizFileGenerator savedQuizzes={savedQuizzes} />
-
-                            {/* UploadPage with ImageUpload */}
+                      <>
                             <UploadPage
                                 setDetectedText={setDetectedText}
                                 callCohereAPI={callCohereAPI}
