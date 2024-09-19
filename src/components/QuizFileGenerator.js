@@ -5,13 +5,13 @@ const generateQuizId = () => {
     return `quiz_${Math.random().toString(36).substr(2, 9)}`;
 };
 
-const QuizFileGenerator = ({ quizTitle, languageOne, languageTwo, quizData, handleJsonUpload }) => {
+const QuizFileGenerator = ({ quizTitle, languageOne, languageTwo, quizData, onJsonData }) => {
     const [savedQuizzes, setSavedQuizzes] = useState([]);
 
     useEffect(() => {
         loadSavedQuizzes();
-        console.log('handleJsonUpload type:', typeof handleJsonUpload);
-    }, [handleJsonUpload]);
+        console.log('onJsonData type:', typeof onJsonData);
+    }, [onJsonData]);
 
     const loadSavedQuizzes = async () => {
         try {
@@ -75,10 +75,10 @@ const QuizFileGenerator = ({ quizTitle, languageOne, languageTwo, quizData, hand
         const reader = new FileReader();
         reader.onload = (event) => {
             const fileContents = event.target.result;
-            if (typeof handleJsonUpload === 'function') {
-                handleJsonUpload(fileContents); 
+            if (typeof onJsonData === 'function') {
+                onJsonData(fileContents); 
             } else {
-                console.error('handleJsonUpload is not a function');
+                console.error('onJsonData is not a function');
             }
         };
         reader.readAsText(simulatedFileContent);
