@@ -81,10 +81,11 @@ const QuizFileGenerator = ({ quizTitle, languageOne, languageTwo, quizData, hand
         const reader = new FileReader();
         reader.onload = (event) => {
             const fileContents = event.target.result;
-            handleJsonUpload(fileContents); // Call your existing function to handle the uploaded file
+            handleJsonUpload(fileContents); // Ensure handleJsonUpload is defined
         };
         reader.readAsText(simulatedFileContent);
     };
+    
 
     return (
         <div>
