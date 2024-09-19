@@ -8,6 +8,7 @@ import QuizPage from './pages/QuizPage';
 import QuizFileGenerator from './components/QuizFileGenerator'; // Import the QuizFileGenerator component
 import { getAllQuizzes } from './utils/indexedDB'; // Import the IndexedDB functions
 
+
 const App = () => {
     const [quizData, setQuizData] = useState([]);
     const [detectedText, setDetectedText] = useState('');
@@ -36,26 +37,33 @@ const App = () => {
     };
 
     const callCohereAPI = async (ocrOutput) => {
-        setLoading(true);
-
+        setLoading(true);  // Set loading state
+    
         try {
             const response = await fetch('/api/cohere', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ ocrOutput })
+                body: JSON.stringify({ ocrOutput }),  // Send OCR output to the API
             });
-            const data = await response.json();
-            const correctedText = data.result;
-            setProcessedText(correctedText);
-            processText(correctedText);
-            setLoading(false);
+    
+            if (!response.ok) {
+                throw new Error('Failed to call Cohere API');
+            }
+    
+            const data = await response.json();  // Get the processed data from the response
+            const correctedText = data.result;   // Access the result of the API call
+            setProcessedText(correctedText);     // Update the processed text state
+            processText(correctedText);          // Process the returned text
+    
+            setLoading(false);  // Set loading state to false once the process is complete
         } catch (error) {
-            console.error('Error calling Cohere API:', error);
-            setLoading(false);
+            console.error('Error calling Cohere API:', error);  // Log any errors
+            setLoading(false);  // Reset loading state on error
         }
     };
+    
 
     const processText = (text) => {
         const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
