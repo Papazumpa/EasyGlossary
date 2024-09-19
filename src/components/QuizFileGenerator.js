@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { saveQuiz, getAllQuizzes } from '../utils/indexedDB'; // Adjust the path based on your project structure
+import { saveQuiz, getAllQuizzes, deleteQuizById } from '../utils/indexedDB';
 
 // Utility function to generate a random ID
 const generateQuizId = () => {
     return `quiz_${Math.random().toString(36).substr(2, 9)}`;
 };
 
-const QuizFileGenerator = ({ quizTitle, languageOne, languageTwo, quizData, userId }) => {
+const QuizFileGenerator = ({ quizTitle, languageOne, languageTwo, quizData, handleJsonUpload }) => {
     const [savedQuizzes, setSavedQuizzes] = useState([]);
 
     useEffect(() => {
@@ -19,28 +19,23 @@ const QuizFileGenerator = ({ quizTitle, languageOne, languageTwo, quizData, user
             setSavedQuizzes(quizzes);
         } catch (error) {
             console.error('Error loading saved quizzes:', error);
-            // Handle error as needed
         }
     };
 
     const handleDownload = () => {
-        // Create quiz metadata object
         const quizFileData = {
             quizId: generateQuizId(),
             quizTitle: quizTitle || 'Untitled Quiz',
-            userId: userId || 'Guest User',
             languageOne: languageOne,
             languageTwo: languageTwo,
             quizData: quizData.filter(pair => 
-                pair.phraseOne && pair.phraseTwo // Filter out invalid phrases
+                pair.phraseOne && pair.phraseTwo
             )
         };
 
-        // Create a downloadable file blob
         const fileData = new Blob([JSON.stringify(quizFileData, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(fileData);
 
-        // Create a link and trigger a download
         const link = document.createElement('a');
         link.href = url;
         link.download = `${quizTitle || 'quiz'}_${quizFileData.quizId}.json`;
@@ -52,28 +47,43 @@ const QuizFileGenerator = ({ quizTitle, languageOne, languageTwo, quizData, user
 
     const handleSaveLocal = async () => {
         try {
-            // Create quiz object for saving
             const quizToSave = {
                 quizId: generateQuizId(),
                 quizTitle: quizTitle || 'Untitled Quiz',
-                userId: userId || 'Guest User',
                 languageOne: languageOne,
                 languageTwo: languageTwo,
                 quizData: quizData.filter(pair => 
-                    pair.phraseOne && pair.phraseTwo // Filter out invalid phrases
+                    pair.phraseOne && pair.phraseTwo
                 )
             };
 
-            // Save quiz to IndexedDB
             await saveQuiz(quizToSave);
-            console.log('Quiz saved locally.');
-
-            // Reload saved quizzes
-            loadSavedQuizzes();
+            loadSavedQuizzes(); // Reload the quizzes list after saving
         } catch (error) {
             console.error('Failed to save quiz locally:', error);
-            // Handle error as needed
         }
+    };
+
+    const handleDeleteQuiz = async (quizId) => {
+        try {
+            await deleteQuizById(quizId); // Implement delete function in indexedDB.js
+            loadSavedQuizzes(); // Reload quizzes after deleting
+        } catch (error) {
+            console.error('Error deleting quiz:', error);
+        }
+    };
+
+    // Simulate quiz upload (as if it was uploaded via the file input)
+    const handleOpenQuiz = (quiz) => {
+        // Simulate the behavior of the file input handling
+        const simulatedFileContent = new Blob([JSON.stringify(quiz)], { type: 'application/json' });
+        
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const fileContents = event.target.result;
+            handleJsonUpload(fileContents); // Call your existing function to handle the uploaded file
+        };
+        reader.readAsText(simulatedFileContent);
     };
 
     return (
@@ -85,7 +95,6 @@ const QuizFileGenerator = ({ quizTitle, languageOne, languageTwo, quizData, user
                 Save Locally
             </button>
 
-            {/* Display saved quizzes */}
             {savedQuizzes.length > 0 && (
                 <div>
                     <h2>Saved Quizzes:</h2>
@@ -93,8 +102,12 @@ const QuizFileGenerator = ({ quizTitle, languageOne, languageTwo, quizData, user
                         {savedQuizzes.map(quiz => (
                             <li key={quiz.quizId}>
                                 <p>Title: {quiz.quizTitle}</p>
-                                <p>User: {quiz.userId}</p>
-                                {/* Add more details as needed */}
+                                <button onClick={() => handleOpenQuiz(quiz)}>
+                                    Open Quiz
+                                </button>
+                                <button onClick={() => handleDeleteQuiz(quiz.quizId)}>
+                                    Delete Quiz
+                                </button>
                             </li>
                         ))}
                     </ul>

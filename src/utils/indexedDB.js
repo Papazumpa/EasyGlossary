@@ -43,6 +43,25 @@ export function saveQuiz(quiz) {
   });
 }
 
+// Delete a quiz by its ID
+export function deleteQuizById(quizId) {
+  return new Promise(async (resolve, reject) => {
+      const db = await openDatabase();
+      const transaction = db.transaction([STORE_NAME], 'readwrite');
+      const objectStore = transaction.objectStore(STORE_NAME);
+
+      const request = objectStore.delete(quizId);
+
+      request.onsuccess = () => {
+          resolve();
+      };
+
+      request.onerror = (event) => {
+          reject('Error deleting quiz: ' + event.target.errorCode);
+      };
+  });
+}
+
 // Get all quizzes
 export function getAllQuizzes() {
   return new Promise(async (resolve, reject) => {
