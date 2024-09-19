@@ -138,7 +138,6 @@ const App = () => {
                                 l1Title={l1Title}
                                 l2Title={l2Title}
                                 onJsonData={handleJsonData} // Pass JSON handler
-                                savedQuizzes={savedQuizzes}
                             />
                         </>
                     }
@@ -168,41 +167,39 @@ const UploadPage = ({
     languageTwo,
     l1Title,
     l2Title,
-    onJsonData,
-    savedQuizzes // Add this line to receive the prop
-  }) => (
+    onJsonData
+}) => (
     <div>
-      <h1>Image to Quiz</h1>
-      <QuizFileGenerator savedQuizzes={savedQuizzes} /> {/* Display QuizFileGenerator */}
-      <ImageUpload
-        onTextDetected={(text) => {
-          setDetectedText(text);
-          callCohereAPI(text);
-        }}
-        onJsonData={onJsonData} // Pass JSON handler
-      />
-      <h2>Detected Text</h2>
-      <pre>{detectedText}</pre>
-      {loading ? <p>Loading...</p> : (
-        <>
-          <h2>Processed Text</h2>
-          <pre>{processedText}</pre>
-          {quizData.length > 0 ? (
+        <h1>Image to Quiz</h1>
+        <QuizFileGenerator savedQuizzes={savedQuizzes} /> {/* Display QuizFileGenerator */}
+        <ImageUpload
+            onTextDetected={(text) => {
+                setDetectedText(text);
+                callCohereAPI(text);
+            }}
+            onJsonData={onJsonData} // Pass JSON handler
+        />
+        <h2>Detected Text</h2>
+        <pre>{detectedText}</pre>
+        {loading ? <p>Loading...</p> : (
             <>
-              <h2>Generated Quiz</h2>
-              <Quiz
-                phrases={quizData}
-                languageOne={languageOne}
-                languageTwo={languageTwo}
-                l1Title={l1Title}
-                l2Title={l2Title}
-              />
+                <h2>Processed Text</h2>
+                <pre>{processedText}</pre>
+                {quizData.length > 0 ? (
+                    <>
+                        <h2>Generated Quiz</h2>
+                        <Quiz
+                            phrases={quizData}
+                            languageOne={languageOne}
+                            languageTwo={languageTwo}
+                            l1Title={l1Title}
+                            l2Title={l2Title}
+                        />
+                    </>
+                ) : <p>No quiz generated yet.</p>}
             </>
-          ) : <p>No quiz generated yet.</p>}
-        </>
-      )}
+        )}
     </div>
-  );
-  
+);
 
 export default App;
